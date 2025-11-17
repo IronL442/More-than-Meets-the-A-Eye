@@ -1,0 +1,57 @@
+experiment: "baseline_benchmark"
+output_dir: "outputs"
+prediction_cache_dir: "predictions"
+cache_predictions: true
+
+limit_images : 20
+predict_only: true
+
+models:
+  - "center_bias"
+  - "blur_baseline"
+  - "msi_net"
+  - "deepgaze_v3"
+  - "msi_net_tf"
+
+model_kwargs:
+  center_bias:
+    requires_size: [224, 224]
+    sigma_ratio: 0.3
+  blur_baseline:
+    ksize: 41
+  msi_net:
+    requires_size: [256, 256]
+    weights_path: "weights/msinet/msinet.pt"
+  deepgaze_v3:
+    requires_size: [384, 384]
+    weights_path: "weights/deepgaze_v3/dg3.pt"
+  msi_net_tf:
+    repo_id: "alexanderkroner/MSI-Net"
+
+datasets:
+  - name: "folder"
+    root: "data/yourset"
+    split: "test"
+
+  - name: "folder"
+    root: "data/seminar_data"
+    split: "test"
+
+  - name: "CAT2000"
+    root: "data/CAT2000"
+    split: "test"
+    sigma_px: 19
+    provide_sauc_nonfix: true
+
+  #- name: "csv_indexed"
+  #  index_csv: "data/MIT_like/index.csv"
+  #  split: "val"
+  #  sigma_px: 15
+
+heatmaps_png:
+  enabled: true
+  overlay: true
+  normalize: "max"
+  colormap: "jet"
+  alpha: 0.5
+  out_dir: "outputs/heatmaps"

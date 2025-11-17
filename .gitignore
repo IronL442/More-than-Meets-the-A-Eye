@@ -3,3 +3,10 @@ venv/
 .env
 .venv/
 env/
+
+# Datasets
+data/*
+
+# Outputs
+outputs/*
+predictions/*
