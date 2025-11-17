@@ -10,3 +10,7 @@ albumentations
 matplotlib
 torch
 torchvision
+tensorflow
+huggingface-hub
+nbformat
+ipywidgets

@@ -8,8 +8,11 @@ Modular saliency benchmarking toolkit that lets you mix-and-match dataset adapte
 
 ```bash
 # 1) create the virtual environment (Python 3.10/3.11 recommended)
+#for Windows without python3
 python3 -m venv .venv
 source .venv/bin/activate
+#for Windows
+.venv\Scripts\activate
 
 # 2) install deps (PyTorch + OpenCV, etc.)
 python -m pip install --upgrade pip wheel setuptools

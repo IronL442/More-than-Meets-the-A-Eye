@@ -12,6 +12,8 @@ models:
   - "msi_net"
   - "deepgaze_v3"
   - "msi_net_tf"
+  - "deepgaze_iie"
+    
 
 model_kwargs:
   center_bias:
@@ -27,6 +29,10 @@ model_kwargs:
     weights_path: "weights/deepgaze_v3/dg3.pt"
   msi_net_tf:
     repo_id: "alexanderkroner/MSI-Net"
+
+  deepgaze_iie:
+    centerbias_path: "data/centerbias/centerbias_mit1003.npy"
+    device: "cpu"
 
 datasets:
   - name: "folder"
