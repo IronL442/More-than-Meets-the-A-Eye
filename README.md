@@ -17,6 +17,8 @@ source .venv/bin/activate
 # 2) install deps (PyTorch + OpenCV, etc.)
 python -m pip install --upgrade pip wheel setuptools
 python -m pip install -r requirements.txt
+pip install git+https://github.com/matthias-k/DeepGaze.git # for DeepGaze IIE
+
 
 # 3) (optional) synthesize a tiny toy dataset
 python scripts/make_toy_data.py
