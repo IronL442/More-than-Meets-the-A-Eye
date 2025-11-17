@@ -10,3 +10,6 @@ data/*
 # Outputs
 outputs/*
 predictions/*
+
+# Mac Bullshit
+.DS_Store
