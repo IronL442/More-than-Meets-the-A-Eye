@@ -2,6 +2,12 @@ import numpy as np
 import torch
 from typing import Optional, Tuple
 
+try:
+    import torch_directml
+    _HAS_DML = True
+except ImportError:
+    _HAS_DML = False
+
 from saliency_bench.core.interfaces import SaliencyModel
 from saliency_bench.utils.image_ops import resize_exact
 
@@ -23,10 +29,20 @@ class TorchSaliencyModel(SaliencyModel):
         mean=IMAGENET_MEAN,
         std=IMAGENET_STD,
     ):
-        self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
+        if device is None:
+            if _HAS_DML:
+                self.device = torch_directml.device()
+            else:
+                self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        else:
+            self.device = torch.device(device) if isinstance(device, str) else device
         self.requires_size = requires_size
         self.mean = torch.tensor(mean)[:, None, None].to(self.device)
         self.std = torch.tensor(std)[:, None, None].to(self.device)
+
+        self.net = None
+
+        self._initialize_net()
 
     def preprocess(self, image_np: np.ndarray) -> torch.Tensor:
         Hm, Wm = self.requires_size if self.requires_size else image_np.shape[:2]

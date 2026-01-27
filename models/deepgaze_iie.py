@@ -1,6 +1,11 @@
 import os
 import numpy as np
 import torch
+try:
+    import torch_directml
+    _HAS_DML = True
+except ImportError:
+    _HAS_DML = False
 
 from scipy.ndimage import zoom
 from scipy.special import logsumexp
@@ -39,7 +44,12 @@ class DeepGazeIIEAdapter(SaliencyModel):
 
         # device
         if device is None:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            if _HAS_DML:
+                self.device = torch_directml.device()
+            elif torch.cuda.is_available():
+                self.device = "cuda"
+            else:
+                self.device = "cpu"
         else:
             self.device = device
 
