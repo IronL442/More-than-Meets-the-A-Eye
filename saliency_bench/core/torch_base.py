@@ -42,8 +42,6 @@ class TorchSaliencyModel(SaliencyModel):
 
         self.net = None
 
-        self._initialize_net()
-
     def preprocess(self, image_np: np.ndarray) -> torch.Tensor:
         Hm, Wm = self.requires_size if self.requires_size else image_np.shape[:2]
         img_resized = resize_exact(image_np, (Hm, Wm))
