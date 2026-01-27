@@ -17,6 +17,45 @@ from saliency_bench.core.registry import register
 from saliency_bench.utils.image_ops import renorm_prob
 
 
+def build_centerbias(centerbias_template: np.ndarray, target_hw: tuple[int, int]) -> np.ndarray:
+    """Resize and renormalize a centerbias template to (H, W) log-density."""
+    H, W = target_hw
+    zoom_factors = (
+        H / centerbias_template.shape[0],
+        W / centerbias_template.shape[1],
+    )
+    centerbias = zoom(
+        centerbias_template,
+        zoom_factors,
+        order=0,
+        mode="nearest",
+    )
+    return centerbias - logsumexp(centerbias)
+
+
+def build_deepgaze_inputs(
+    image_np: np.ndarray,
+    centerbias_template: np.ndarray,
+    device: str,
+    add_batch_dim: bool = True,
+):
+    """
+    Build DeepGaze inputs from a uint8/float RGB image.
+
+    Returns (image_tensor, centerbias_tensor) with optional batch dim.
+    """
+    img = image_np.astype(np.float32)  # [H,W,3] in [0..255]
+    H, W = img.shape[:2]
+    centerbias = build_centerbias(centerbias_template, (H, W))
+
+    image_tensor = torch.from_numpy(img.transpose(2, 0, 1)).to(device=device, dtype=torch.float32)
+    centerbias_tensor = torch.from_numpy(centerbias).to(device=device, dtype=torch.float32)
+    if add_batch_dim:
+        image_tensor = image_tensor.unsqueeze(0)
+        centerbias_tensor = centerbias_tensor.unsqueeze(0)
+    return image_tensor, centerbias_tensor
+
+
 @register("model", "deepgaze_iie")
 class DeepGazeIIEAdapter(SaliencyModel):
     """
@@ -85,42 +124,13 @@ class DeepGazeIIEAdapter(SaliencyModel):
                 centerbias_tensor:[1,H,W]
         """
         assert image_np.ndim == 3 and image_np.shape[2] == 3
-        img = image_np.astype(np.float32)  # [H,W,3] in [0..255]
-        H, W = img.shape[:2]
-
-        # --- build centerbias for this image size (exact repo logic) ---
-        cb_tmpl = self.centerbias_template  # [H0, W0]
-        zoom_factors = (
-            H / cb_tmpl.shape[0],
-            W / cb_tmpl.shape[1],
+        image_tensor, centerbias_tensor = build_deepgaze_inputs(
+            image_np,
+            self.centerbias_template,
+            self.device,
+            add_batch_dim=True,
         )
-        centerbias = zoom(
-            cb_tmpl,
-            zoom_factors,
-            order=0,
-            mode="nearest",
-        )  # [H,W]
-
-        # renormalize log-density
-        # (this is exactly `centerbias -= logsumexp(centerbias)`)
-        centerbias = centerbias - logsumexp(centerbias)
-
-        # --- build tensors as in the example ---
-        # image_tensor: [1,3,H,W]
-        image_tensor = torch.tensor(
-            [img.transpose(2, 0, 1)],  # [3,H,W] -> [1,3,H,W]
-            dtype=torch.float32,
-            device=self.device,
-        )
-
-        # centerbias_tensor: [1,H,W]
-        centerbias_tensor = torch.tensor(
-            [centerbias],  # [H,W] -> [1,H,W]
-            dtype=torch.float32,
-            device=self.device,
-        )
-
-        return (image_tensor, centerbias_tensor)
+        return image_tensor, centerbias_tensor
 
     def predict(self, model_input) -> np.ndarray:
         """

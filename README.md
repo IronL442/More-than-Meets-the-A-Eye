@@ -183,6 +183,70 @@ When the runner starts, it auto-imports all `datasets.*` and `models.*` modules,
 
 ---
 
+## 5.1 DeepGaze II-E Fine-Tuning (blocks + freeze semantics)
+
+The fine-tuning script (`scripts/finetune_deepgaze_iie.py`) uses a **named blocks** API to control what trains.
+The meaning of `freeze` depends on the `mode`:
+
+* `mode: "train_blocks"` → **only the listed blocks are trainable; everything else is frozen**
+* `mode: "freeze_blocks"` → **the listed blocks are frozen; everything else is trainable**
+
+Available block names:
+`backbone`, `saliency`, `fixation_selection`, `finalizer`, `head`, `all`
+
+`head` is shorthand for `saliency + fixation_selection + finalizer`.
+
+You can also optionally unfreeze the **last N backbone modules** in addition to the blocks via
+`backbone_last_n_modules` (useful for staged fine-tuning).
+
+Example (train head only, then head + last 2 backbone modules):
+
+```yaml
+training:
+  stages:
+    - name: "feature_extraction"
+      freeze:
+        mode: "train_blocks"
+        blocks: ["head"]
+    - name: "fine_tune"
+      freeze:
+        mode: "train_blocks"
+        blocks: ["head"]
+        backbone_last_n_modules: 2
+```
+
+### Multi-participant GT aggregation
+
+If your dataset provides multiple ground-truth maps per image (e.g., one per participant),
+the fine-tuning loader can aggregate them before training. Configure via:
+
+```yaml
+data:
+  gt_aggregate: "mean"   # "mean" | "median" | "random"
+  gt_resize_interp: "bilinear"  # "bilinear" | "bicubic"
+  gt_cache_dir: "data/img_bin/gt_maps_mean"
+```
+
+`mean`/`median` aggregate all participant maps into a single target map.  
+`random` picks one participant map per image per epoch (stochastic target).
+
+If `gt_cache_dir` is set and `gt_aggregate: "mean"`, precompute mean maps once:
+
+```bash
+python scripts/precompute_gt_mean.py --config configs/finetune_deepgaze_iie.yaml
+```
+
+This writes `<gt_cache_dir>/<image_id>.npy`, which the fine-tuning loader will reuse.
+
+If GT map resolution differs from image resolution, maps are resized to image size
+using the configured interpolation and then renormalized (sum=1).
+
+Loss options for fine-tuning:
+* `kl`: KL divergence between GT map and prediction  
+* `nll_fixations`: negative log-likelihood of fixation maps
+
+---
+
 ## 6. Visualization & Inspection
 
 ### 6.1 PNG Heatmaps & Overlays

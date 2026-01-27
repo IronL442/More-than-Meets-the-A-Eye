@@ -1,0 +1,44 @@
+experiment: "deepgaze_iie_finetune"
+output_dir: "outputs/finetune/deepgaze_iie"
+seed: 1337
+
+data:
+  root: "data/img_bin"
+  train_split: 0.8
+  shuffle: true
+  sigma_px: 15
+  batch_size: 1
+  num_workers: 0
+  gt_aggregate: "mean"  # mean | median | random (random picks one participant map per image per epoch)
+  gt_resize_interp: "bilinear"  # bilinear | bicubic (for resizing GT maps to image resolution)
+  gt_cache_dir: "data/img_bin/gt_maps_mean"  # directory for precomputed mean maps
+  allow_uniform_gt: false
+
+model:
+  centerbias_path: "data/centerbias/centerbias_mit1003.npy"
+  use_uniform_centerbias: true
+  device: none  # "cpu" | "cuda" | none (auto-detect)
+
+training:
+  loss: "kl"  # "kl" | "nll_fixations"
+  stages:
+    # Stage 1: feature extraction (train head only)
+    - name: "feature_extraction"
+      epochs: 20 #ecommended: 15-30
+      lr: 0.0001
+      weight_decay: 0.0
+      freeze:
+        mode: "train_blocks"
+        blocks: ["saliency", "finalizer"] # defines the trainable blocks, options are: # backbone # saliency # fixation_selection # finalizer # head # all
+      train_features: false
+
+    # Stage 2: fine-tune (train head + last N backbone modules)
+    - name: "fine_tune"
+      epochs: 10 # Recommended: 5-15
+      lr: 0.00001
+      weight_decay: 0.0
+      freeze:
+        mode: "train_blocks"
+        blocks: ["head"] # defines the trainable blocks, options are: # backbone # saliency # fixation_selection # finalizer # head # all
+        backbone_last_n_modules: 0
+      train_features: false
