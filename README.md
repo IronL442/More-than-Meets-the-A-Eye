@@ -238,6 +238,23 @@ python scripts/precompute_gt_mean.py --config configs/finetune_deepgaze_iie.yaml
 
 This writes `<gt_cache_dir>/<image_id>.npy`, which the fine-tuning loader will reuse.
 
+### Weights & Biases tracking
+
+Enable W&B logging in your fine-tune config:
+
+```yaml
+wandb:
+  enabled: true
+  project: "deepgaze-finetune"
+  entity: null
+  name: null
+  group: null
+  tags: ["deepgaze_iie"]
+  notes: null
+  dir: null
+  mode: null
+```
+
 If GT map resolution differs from image resolution, maps are resized to image size
 using the configured interpolation and then renormalized (sum=1).
 

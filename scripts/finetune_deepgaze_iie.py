@@ -15,6 +15,12 @@ try:
 except ImportError:
     _HAS_DML = False
 
+try:
+    import wandb
+    _HAS_WANDB = True
+except ImportError:
+    _HAS_WANDB = False
+
 import deepgaze_pytorch
 
 # Ensure repo root is on sys.path when running as a script.
@@ -405,6 +411,24 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
     os.makedirs(output_dir, exist_ok=True)
     _write_yaml(os.path.join(output_dir, "config.yaml"), cfg)
 
+    wandb_cfg = cfg.get("wandb", {}) or {}
+    wandb_enabled = bool(wandb_cfg.get("enabled", False))
+    if wandb_enabled and not _HAS_WANDB:
+        raise ImportError("wandb is not installed. Run: pip install wandb")
+    wandb_run = None
+    if wandb_enabled:
+        wandb_run = wandb.init(
+            project=wandb_cfg.get("project"),
+            entity=wandb_cfg.get("entity"),
+            name=wandb_cfg.get("name"),
+            group=wandb_cfg.get("group"),
+            tags=wandb_cfg.get("tags"),
+            notes=wandb_cfg.get("notes"),
+            dir=wandb_cfg.get("dir", output_dir),
+            mode=wandb_cfg.get("mode"),
+            config=cfg,
+        )
+
     data_cfg = cfg.get("data", {})
     root = data_cfg.get("root", "data/img_bin")
     train_split = float(data_cfg.get("train_split", 0.8))
@@ -511,9 +535,23 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
                     f"{stage_name},{epoch},{train_loss:.6f},{val_loss:.6f},"
                     f"{param_counts['trainable']},{param_counts['total']}\n"
                 )
+            if wandb_run is not None:
+                wandb.log(
+                    {
+                        "stage": stage_name,
+                        "epoch": epoch,
+                        "train_loss": train_loss,
+                        "val_loss": val_loss,
+                        "lr": lr,
+                        "trainable_params": param_counts["trainable"],
+                        "total_params": param_counts["total"],
+                    }
+                )
 
     final_path = os.path.join(output_dir, "final.pth")
     torch.save(model.state_dict(), final_path)
+    if wandb_run is not None:
+        wandb_run.finish()
 
 
 if __name__ == "__main__":

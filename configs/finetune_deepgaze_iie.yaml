@@ -42,3 +42,14 @@ training:
         blocks: ["head"] # defines the trainable blocks, options are: # backbone # saliency # fixation_selection # finalizer # head # all
         backbone_last_n_modules: 0
       train_features: false
+
+wandb:
+  enabled: false
+  project: null
+  entity: null
+  name: null
+  group: null
+  tags: []
+  notes: null
+  dir: null
+  mode: null
