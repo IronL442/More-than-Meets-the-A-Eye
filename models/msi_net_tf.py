@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import tensorflow as tf
 import keras
@@ -21,6 +22,8 @@ class MSINetTF(SaliencyModel):
         self.name = "msi_net_tf"
         self.repo_id = repo_id
         # Download/cached under ~/.cache/huggingface
+        # Disable symlinks by default on Windows to avoid WinError 1314.
+        os.environ.setdefault("HF_HUB_DISABLE_SYMLINKS", "1")
         self.hf_dir = snapshot_download(repo_id=self.repo_id)
 
         # Keras 3: wrap SavedModel for inference
