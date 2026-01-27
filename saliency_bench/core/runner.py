@@ -63,7 +63,8 @@ def run_experiment(cfg_path: str):
     all_rows = []
     for ds_cfg in cfg["datasets"]:
         ds = build("dataset", ds_cfg["name"], **{k: v for k, v in ds_cfg.items() if k != "name"})
-        for model_name in cfg["models"]:
+        models_to_run = cfg.get("active_models", cfg["models"])
+        for model_name in models_to_run:
             model_kwargs = cfg.get("model_kwargs", {}).get(model_name, {})
             model = build("model", model_name, **model_kwargs)
             rows = []

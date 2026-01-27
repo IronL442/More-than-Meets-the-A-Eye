@@ -70,6 +70,10 @@ models:
   - "deepgaze_v3"
   - "msi_net_tf"
 
+# Optional: specify which models to actually run (if omitted, all models run)
+active_models:
+  - "deepgaze_v3"
+
 model_kwargs:
   center_bias:
     requires_size: [224, 224]
@@ -113,6 +117,7 @@ heatmaps_png:
 | Flag | Purpose |
 | --- | --- |
 | `limit_images` | cap how many samples to iterate per dataset (debugging, sanity runs). |
+| `active_models` | optional list of model names to run; if omitted, all models in `models` list run. |
 | `predict_only` | skip metric computation/aggregation (still caches predictions, saves PNGs). |
 | `heatmaps_png` | control PNG outputs (enable overlay, color map, normalization, output dir). |
 

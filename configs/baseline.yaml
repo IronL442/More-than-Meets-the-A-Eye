@@ -1,9 +1,9 @@
 experiment: "baseline_benchmark"
 output_dir: "outputs"
 prediction_cache_dir: "predictions"
-cache_predictions: true
+cache_predictions: false
 
-limit_images : 20
+limit_images : null
 predict_only: true
 
 models:
@@ -13,8 +13,10 @@ models:
   - "deepgaze_v3"
   - "msi_net_tf"
   - "deepgaze_iie"
-     
 
+active_models:
+  - "deepgaze_iie"
+     
 model_kwargs:
   center_bias:
     requires_size: [224, 224]
@@ -32,12 +34,11 @@ model_kwargs:
 
   deepgaze_iie:
     centerbias_path: "data/centerbias/centerbias_mit1003.npy"
-    device: "cpu"
     use_uniform_centerbias: true  
 
 datasets:
   - name: "folder"
-    root: "data/yourset"
+    root: "data/img_bin"
     split: "test"
 
   - name: "folder"
