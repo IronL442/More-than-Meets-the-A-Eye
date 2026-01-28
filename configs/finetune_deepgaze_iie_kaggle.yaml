@@ -6,7 +6,7 @@ data:
   # Replace <your-dataset> with the Kaggle Dataset slug that contains img_bin/
   root: "/kaggle/input/training-data/img_bin"
   cv_folds: 5          # >= 2 enables CV
-  cv_fold_index: 0  # set to 0..4 to run a single fold
+  cv_fold_index: null  # set to 0..4 to run a single fold
   cv_shuffle: true     # optional, defaults to data.shuffle
   shuffle: true
   sigma_px: 15
@@ -29,7 +29,7 @@ training:
   loss: "kl"
   stages:
     - name: "feature_extraction"
-      epochs: 20
+      epochs: 15
       lr: 0.0001
       weight_decay: 0.0
       freeze:
