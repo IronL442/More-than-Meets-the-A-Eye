@@ -594,6 +594,7 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
             weight_decay = float(stage.get("weight_decay", 0.0))
             epochs = int(stage.get("epochs", 1))
             train_features = bool(stage.get("train_features", False))
+            save_best_only = bool(stage.get("save_best_only", False))
 
             optimizer = torch.optim.Adam(
                 [p for p in model.parameters() if p.requires_grad],
@@ -601,6 +602,8 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
                 weight_decay=weight_decay,
             )
 
+            best_val = float("inf")
+            best_ckpt_path = os.path.join(stage_dir, "best.pth")
             epoch_iter = range(1, epochs + 1)
             if progress and _HAS_TQDM:
                 label = f"{stage_name} epochs"
@@ -630,8 +633,13 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
                     desc=f"{stage_name} val (epoch {epoch}/{epochs})",
                 )
 
-                ckpt_path = os.path.join(stage_dir, f"epoch_{epoch:03d}.pth")
-                torch.save(model.state_dict(), ckpt_path)
+                if save_best_only:
+                    if val_loss < best_val:
+                        best_val = val_loss
+                        torch.save(model.state_dict(), best_ckpt_path)
+                else:
+                    ckpt_path = os.path.join(stage_dir, f"epoch_{epoch:03d}.pth")
+                    torch.save(model.state_dict(), ckpt_path)
 
                 with open(log_path, "a", encoding="utf-8") as f:
                     f.write(
