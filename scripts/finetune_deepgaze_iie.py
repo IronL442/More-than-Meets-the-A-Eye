@@ -21,6 +21,12 @@ try:
 except ImportError:
     _HAS_WANDB = False
 
+try:
+    from tqdm import tqdm
+    _HAS_TQDM = True
+except ImportError:
+    _HAS_TQDM = False
+
 import deepgaze_pytorch
 
 # Ensure repo root is on sys.path when running as a script.
@@ -317,6 +323,8 @@ def _run_epoch(
     train: bool,
     train_features: bool,
     optimizer: Optional[torch.optim.Optimizer] = None,
+    progress: bool = False,
+    desc: Optional[str] = None,
 ) -> float:
     if train:
         model.train()
@@ -325,7 +333,10 @@ def _run_epoch(
         model.eval()
 
     losses: List[float] = []
-    for batch in loader:
+    iterator = loader
+    if progress and _HAS_TQDM:
+        iterator = tqdm(loader, desc=desc, leave=False)
+    for batch in iterator:
         image = batch["image"].to(device)
         centerbias = batch["centerbias"].to(device)
         gt_map = batch["gt_map"].to(device)
@@ -341,6 +352,8 @@ def _run_epoch(
             loss.backward()
             optimizer.step()
         losses.append(float(loss.detach().cpu().numpy()))
+        if progress and _HAS_TQDM:
+            iterator.set_postfix(loss=f"{losses[-1]:.4f}")
 
     return float(np.mean(losses)) if losses else float("nan")
 
@@ -489,6 +502,7 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
     with open(log_path, "w", encoding="utf-8") as f:
         f.write("stage,epoch,train_loss,val_loss,trainable_params,total_params\n")
 
+    progress = bool(cfg.get("training", {}).get("progress", True))
     for stage in stages:
         stage_name = str(stage.get("name", "stage"))
         stage_dir = os.path.join(output_dir, stage_name)
@@ -508,7 +522,10 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
             weight_decay=weight_decay,
         )
 
-        for epoch in range(1, epochs + 1):
+        epoch_iter = range(1, epochs + 1)
+        if progress and _HAS_TQDM:
+            epoch_iter = tqdm(epoch_iter, desc=f"{stage_name} epochs", leave=True)
+        for epoch in epoch_iter:
             train_loss = _run_epoch(
                 model,
                 train_loader,
@@ -517,6 +534,8 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
                 train=True,
                 train_features=train_features,
                 optimizer=optimizer,
+                progress=progress,
+                desc=f"{stage_name} train (epoch {epoch}/{epochs})",
             )
             val_loss = _run_epoch(
                 model,
@@ -525,6 +544,8 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
                 loss_type=loss_type,
                 train=False,
                 train_features=train_features,
+                progress=progress,
+                desc=f"{stage_name} val (epoch {epoch}/{epochs})",
             )
 
             ckpt_path = os.path.join(stage_dir, f"epoch_{epoch:03d}.pth")

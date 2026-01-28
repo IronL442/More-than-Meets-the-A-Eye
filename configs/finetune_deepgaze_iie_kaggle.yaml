@@ -53,3 +53,7 @@ wandb:
   notes: null
   dir: null
   mode: null
+
+training:
+  progress: true
+
