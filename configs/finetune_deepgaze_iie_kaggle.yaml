@@ -22,6 +22,7 @@ model:
   device: "cuda"
 
 training:
+  progress: true
   loss: "kl"
   stages:
     - name: "feature_extraction"
@@ -53,7 +54,4 @@ wandb:
   notes: null
   dir: null
   mode: null
-
-training:
-  progress: true
 
