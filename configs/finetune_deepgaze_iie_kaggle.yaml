@@ -5,7 +5,7 @@ seed: 1337
 data:
   # Replace <your-dataset> with the Kaggle Dataset slug that contains img_bin/
   root: "/kaggle/input/training-data/img_bin"
-  cv_folds: 5          # >= 2 enables CV
+  cv_folds: 2          # >= 2 enables CV
   cv_fold_index: null  # set to 0..4 to run a single fold
   cv_shuffle: true     # optional, defaults to data.shuffle
   shuffle: true
