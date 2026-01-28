@@ -4,7 +4,7 @@ seed: 1337
 
 data:
   # Replace <your-dataset> with the Kaggle Dataset slug that contains img_bin/
-  root: "/kaggle/input/<your-dataset>/img_bin"
+  root: "/kaggle/input/training-data/img_bin"
   train_split: 0.8
   shuffle: true
   sigma_px: 15
@@ -13,7 +13,7 @@ data:
   gt_aggregate: "mean"
   gt_resize_interp: "bilinear"
   # Writable cache dir for mean GT maps (precompute optional but recommended)
-  gt_cache_dir: "/kaggle/working/gt_maps_mean"
+  gt_cache_dir: "/kaggle/input/training-data/img_bin/gt_maps_mean"
   allow_uniform_gt: false
 
 model:
