@@ -24,7 +24,14 @@ class FolderDataset(SaliencyDataset):
     If neither GT nor fixations exist, a uniform GT is used so inference still works.
     """
 
-    def __init__(self, root: str, split: str = "test", sigma_px: int = 15):
+    def __init__(
+        self,
+        root: str,
+        split: str = "test",
+        sigma_px: int = 15,
+        include_list: str | None = None,
+        exclude_list: str | None = None,
+    ):
         self.name = "folder"
         self.root = root
         self.split = split
@@ -37,7 +44,29 @@ class FolderDataset(SaliencyDataset):
         paths = []
         for e in exts:
             paths.extend(glob.glob(os.path.join(self.img_dir, e)))
-        self.img_paths = sorted(paths)
+        img_paths = sorted(paths)
+        if include_list:
+            include_ids = self._load_id_list(include_list)
+            img_paths = [p for p in img_paths if self._stem(p) in include_ids]
+        if exclude_list:
+            exclude_ids = self._load_id_list(exclude_list)
+            img_paths = [p for p in img_paths if self._stem(p) not in exclude_ids]
+        self.img_paths = img_paths
+
+    @staticmethod
+    def _stem(path: str) -> str:
+        return os.path.splitext(os.path.basename(path))[0]
+
+    @staticmethod
+    def _load_id_list(path: str) -> set[str]:
+        ids: set[str] = set()
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                item = line.strip()
+                if not item:
+                    continue
+                ids.add(FolderDataset._stem(item))
+        return ids
 
     def __iter__(self) -> Iterator[Dict[str, Any]]:
         for p in self.img_paths:

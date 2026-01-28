@@ -78,6 +78,9 @@ class DeepGazeIIEAdapter(SaliencyModel):
         centerbias_path: str = "data/centerbias/centerbias_mit1003.npy",
         device: str = None,
         use_uniform_centerbias: bool = False,
+        weights_path: str | None = None,
+        pretrained: bool = True,
+        strict: bool = True,
     ):
         self.name = "deepgaze_iie"
 
@@ -92,8 +95,15 @@ class DeepGazeIIEAdapter(SaliencyModel):
         else:
             self.device = device
 
-        # DeepGaze II-E model with pretrained weights
-        self.model = deepgaze_pytorch.DeepGazeIIE(pretrained=True).to(self.device)
+        # DeepGaze II-E model (pretrained or custom weights)
+        if weights_path:
+            if not os.path.exists(weights_path):
+                raise FileNotFoundError(f"DeepGaze weights not found at {weights_path}")
+            self.model = deepgaze_pytorch.DeepGazeIIE(pretrained=False).to(self.device)
+            state = torch.load(weights_path, map_location="cpu")
+            self.model.load_state_dict(state, strict=bool(strict))
+        else:
+            self.model = deepgaze_pytorch.DeepGazeIIE(pretrained=bool(pretrained)).to(self.device)
         self.model.eval()
 
         # centerbias template (2D array)
