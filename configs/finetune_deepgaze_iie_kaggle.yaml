@@ -4,7 +4,7 @@ seed: 1337
 
 data:
   # Replace <your-dataset> with the Kaggle Dataset slug that contains img_bin/
-  root: "/kaggle/input/training-data/img_bin"
+  root: "/kaggle/input/img_bin"
   cv_folds: 2          # >= 2 enables CV
   cv_fold_index: null  # set to 0..4 to run a single fold
   cv_shuffle: true     # optional, defaults to data.shuffle
@@ -15,7 +15,7 @@ data:
   gt_aggregate: "mean"
   gt_resize_interp: "bilinear"
   # Writable cache dir for mean GT maps (precompute optional but recommended)
-  gt_cache_dir: "/kaggle/input/training-data/img_bin/gt_maps_mean"
+  gt_cache_dir: "/kaggle/input/img_bin/gt_maps_mean"
   exclude_list: "/kaggle/working/splits/test.txt"
   allow_uniform_gt: false
 
