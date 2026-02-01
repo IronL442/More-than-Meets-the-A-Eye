@@ -17,6 +17,6 @@ model_kwargs:
 
 datasets:
   - name: "folder"
-    root: "data/img_bin"
+    root: "/kaggle/input/img_bin"
     split: "test"
-    include_list: "splits/test.txt"
+    include_list: "/kaggle/working/splits/test.txt"
