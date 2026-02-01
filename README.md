@@ -339,4 +339,73 @@ print(df.head())
 
 ---
 
+## 10. Kaggle Evaluation Workflow (DeepGaze IIE)
+
+This repo is runnable on Kaggle, with a few environment-specific details:
+
+* Internet may be disabled by default. If you need DeepGaze from GitHub, enable internet or vendor the package.
+* Kaggle paths are typically `/kaggle/input/...` for datasets and `/kaggle/working/...` for writable outputs.
+* With cross-validation enabled, each fold writes its own weights to `.../fold_XX/final.pth`.
+
+### 10.1 Setup (once per notebook)
+
+```bash
+python -m pip install --upgrade pip wheel setuptools
+python -m pip install -r requirements.txt
+pip install git+https://github.com/matthias-k/DeepGaze.git
+```
+
+### 10.2 Create the holdout split
+
+```bash
+python scripts/make_holdout_split.py \
+  --root /kaggle/input/img_bin \
+  --test_count 30 \
+  --out_dir /kaggle/working/splits
+```
+
+### 10.3 Fine-tune with 4-fold CV
+
+Config: `configs/finetune_deepgaze_iie_kaggle.yaml`
+
+```bash
+python scripts/finetune_deepgaze_iie.py --config configs/finetune_deepgaze_iie_kaggle.yaml
+```
+
+Outputs:
+```
+/kaggle/working/outputs/finetune/deepgaze_iie/fold_01/final.pth
+/kaggle/working/outputs/finetune/deepgaze_iie/fold_02/final.pth
+/kaggle/working/outputs/finetune/deepgaze_iie/fold_03/final.pth
+/kaggle/working/outputs/finetune/deepgaze_iie/fold_04/final.pth
+```
+
+### 10.4 Evaluate (pretrained baseline + each finetuned fold)
+
+Pretrained baseline:
+```bash
+python -m saliency_bench.core.runner --config configs/eval_deepgaze_iie_pretrained.yaml
+```
+
+Finetuned folds:
+```bash
+python -m saliency_bench.core.runner --config configs/eval_deepgaze_iie_finetuned_fold_01.yaml
+python -m saliency_bench.core.runner --config configs/eval_deepgaze_iie_finetuned_fold_02.yaml
+python -m saliency_bench.core.runner --config configs/eval_deepgaze_iie_finetuned_fold_03.yaml
+python -m saliency_bench.core.runner --config configs/eval_deepgaze_iie_finetuned_fold_04.yaml
+```
+
+### 10.5 Aggregate fold metrics
+
+```bash
+python scripts/aggregate_fold_metrics.py
+```
+
+This writes:
+```
+outputs/eval/deepgaze_iie_finetuned_cv_summary.csv
+```
+
+---
+
 Happy benchmarking! Plug in your favorite saliency datasets and models to compare them in a unified pipeline.

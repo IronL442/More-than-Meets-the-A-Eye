@@ -1,0 +1,22 @@
+experiment: "eval_deepgaze_iie_finetuned_fold_02"
+output_dir: "outputs/eval/deepgaze_iie_finetuned_fold_02"
+prediction_cache_dir: "predictions"
+cache_predictions: true
+predict_only: false
+
+models:
+  - "deepgaze_iie"
+
+active_models:
+  - "deepgaze_iie"
+
+model_kwargs:
+  deepgaze_iie:
+    use_uniform_centerbias: true
+    weights_path: "/kaggle/working/outputs/finetune/deepgaze_iie/fold_02/final.pth"
+
+datasets:
+  - name: "folder"
+    root: "/kaggle/input/img_bin"
+    split: "test"
+    include_list: "/kaggle/working/splits/test.txt"
