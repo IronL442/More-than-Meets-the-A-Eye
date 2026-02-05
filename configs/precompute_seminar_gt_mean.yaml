@@ -1,0 +1,4 @@
+data:
+  root: "data/seminar_data"
+  gt_cache_dir: "data/seminar_data/gt_maps_mean"
+  gt_resize_interp: "bilinear"

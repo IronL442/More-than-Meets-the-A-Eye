@@ -144,11 +144,13 @@ class FolderSaliencyDataset(torch.utils.data.Dataset):
                 arr = img.astype(np.float32)
             arr = self._resize_map(arr, H, W)
             arr = np.clip(arr, 0.0, None)
-            maps.append(renorm_prob(arr))
+            maps.append(arr)
         if self.gt_aggregate == "random":
-            return maps[np.random.randint(0, len(maps))]
+            rand_map = maps[np.random.randint(0, len(maps))]
+            return renorm_prob(rand_map)
         if self.gt_aggregate == "median":
-            return np.median(np.stack(maps, axis=0), axis=0).astype(np.float32)
+            med_map = np.median(np.stack(maps, axis=0), axis=0).astype(np.float32)
+            return renorm_prob(med_map)
         if self.gt_aggregate == "mean":
             mean_map = np.mean(np.stack(maps, axis=0), axis=0).astype(np.float32)
             mean_map = renorm_prob(mean_map)
@@ -323,8 +325,6 @@ def _run_epoch(
     train: bool,
     train_features: bool,
     optimizer: Optional[torch.optim.Optimizer] = None,
-    progress: bool = False,
-    desc: Optional[str] = None,
 ) -> float:
     if train:
         model.train()
@@ -333,10 +333,7 @@ def _run_epoch(
         model.eval()
 
     losses: List[float] = []
-    iterator = loader
-    if progress and _HAS_TQDM:
-        iterator = tqdm(loader, desc=desc, leave=False)
-    for batch in iterator:
+    for batch in loader:
         image = batch["image"].to(device)
         centerbias = batch["centerbias"].to(device)
         gt_map = batch["gt_map"].to(device)
@@ -352,8 +349,6 @@ def _run_epoch(
             loss.backward()
             optimizer.step()
         losses.append(float(loss.detach().cpu().numpy()))
-        if progress and _HAS_TQDM:
-            iterator.set_postfix(loss=f"{losses[-1]:.4f}")
 
     return float(np.mean(losses)) if losses else float("nan")
 
@@ -619,8 +614,6 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
                     train=True,
                     train_features=train_features,
                     optimizer=optimizer,
-                    progress=progress,
-                    desc=f"{stage_name} train (epoch {epoch}/{epochs})",
                 )
                 val_loss = _run_epoch(
                     model,
@@ -629,8 +622,6 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
                     loss_type=loss_type,
                     train=False,
                     train_features=train_features,
-                    progress=progress,
-                    desc=f"{stage_name} val (epoch {epoch}/{epochs})",
                 )
 
                 if save_best_only:

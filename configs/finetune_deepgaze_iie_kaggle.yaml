@@ -50,12 +50,12 @@ training:
       train_features: false
 
 wandb:
-  enabled: false
-  project: null
+  enabled: true
+  project: "deepgaze-iie-saliency"
   entity: null
-  name: null
-  group: null
-  tags: []
-  notes: null
-  dir: null
-  mode: null
+  name: "finetuned"
+  group: "finetune-vs-baseline"
+  tags: ["deepgaze", "finetune", "cv"]
+  notes: "4-fold CV fine-tuning on 152-image dataset"
+  dir: "/kaggle/working/wandb_logs"
+  mode: "online"

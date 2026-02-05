@@ -1,0 +1,30 @@
+experiment: "eval_deepgaze_iie_finetuned_fold_02_local"
+output_dir: "outputs/eval/deepgaze_iie_finetuned_fold_02"
+prediction_cache_dir: "predictions/fold_02"
+cache_predictions: true
+predict_only: false
+
+models:
+  - "deepgaze_iie"
+
+active_models:
+  - "deepgaze_iie"
+
+model_kwargs:
+  deepgaze_iie:
+    use_uniform_centerbias: true
+    weights_path: "outputs/finetune/deepgaze_iie/fold_02/final.pth"
+
+datasets:
+  - name: "folder"
+    root: "data/seminar_data"
+    split: "test"
+    include_list: "splits/test.txt"
+
+heatmaps_png:
+  enabled: true
+  overlay: true
+  normalize: "max"
+  colormap: "jet"
+  alpha: 0.5
+  out_dir: "outputs/heatmaps/fold_02"

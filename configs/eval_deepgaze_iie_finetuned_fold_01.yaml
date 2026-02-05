@@ -13,10 +13,10 @@ active_models:
 model_kwargs:
   deepgaze_iie:
     use_uniform_centerbias: true
-    weights_path: "/kaggle/working/outputs/finetune/deepgaze_iie/fold_01/final.pth"
+    weights_path: "/outputs/finetune/deepgaze_iie/fold_01/final.pth"
 
 datasets:
   - name: "folder"
-    root: "/kaggle/input/img_bin"
+    root: "/data/input/img_bin"
     split: "test"
-    include_list: "/kaggle/working/splits/test.txt"
+    include_list: "/splits/test.txt"

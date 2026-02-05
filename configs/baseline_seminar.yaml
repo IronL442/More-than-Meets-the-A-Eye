@@ -1,0 +1,32 @@
+experiment: "baseline_seminar_heldout"
+output_dir: "outputs/eval/baseline_seminar"
+prediction_cache_dir: "predictions"
+cache_predictions: true
+predict_only: false
+
+models:
+  - "deepgaze_iie"
+
+
+active_models:
+  - "deepgaze_iie"
+
+model_kwargs:
+  deepgaze_iie:
+    use_uniform_centerbias: false
+    centerbias_path: "data/centerbias/centerbias_mit1003.npy"
+    weights_path: null   # pretrained
+
+datasets:
+  - name: "folder"
+    root: "data/seminar_data"
+    split: "test"
+    include_list: "splits/test.txt"
+
+heatmaps_png:
+  enabled: true
+  overlay: true
+  normalize: "max"
+  colormap: "jet"
+  alpha: 0.5
+  out_dir: "outputs/heatmaps/baseline"

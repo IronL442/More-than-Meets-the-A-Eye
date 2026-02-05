@@ -97,10 +97,13 @@ def precompute(cfg_path: str) -> None:
             arr = _load_gt_map(path)
             arr = _resize_map(arr, H, W, gt_resize_interp)
             arr = np.clip(arr, 0.0, None)
-            maps.append(renorm_prob(arr))
+            maps.append(arr)
 
         mean_map = np.mean(np.stack(maps, axis=0), axis=0).astype(np.float32)
         mean_map = renorm_prob(mean_map)
+        entropy = -np.sum(mean_map * np.log(mean_map + 1e-12))
+        print(f"{stem}: entropy={entropy:.3f}")
+
         np.save(os.path.join(gt_cache_dir, stem + ".npy"), mean_map)
 
     print(f"Saved mean GT maps to: {gt_cache_dir}")
