@@ -215,6 +215,22 @@ training:
         backbone_last_n_modules: 2
 ```
 
+### Kaggle `T4 x2` parallel folds
+
+For cross-validation on Kaggle with 2 GPUs, run folds in parallel (one fold per GPU):
+
+```bash
+bash scripts/run_finetune_deepgaze_iie_kaggle_t4x2.sh configs/finetune_deepgaze_iie_kaggle.yaml 0 1 2 3
+```
+
+The launcher executes folds in waves: `(0,1)` then `(2,3)`, pinned to `GPU0` and `GPU1`.
+
+You can also run a single fold directly:
+
+```bash
+python scripts/finetune_deepgaze_iie.py --config configs/finetune_deepgaze_iie_kaggle.yaml --cv_fold_index 2
+```
+
 ### Multi-participant GT aggregation
 
 If your dataset provides multiple ground-truth maps per image (e.g., one per participant),

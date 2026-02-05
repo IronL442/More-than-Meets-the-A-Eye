@@ -421,7 +421,11 @@ def _write_yaml(path: str, data: Dict) -> None:
         yaml.safe_dump(data, f, sort_keys=False)
 
 
-def run(cfg_path: str, print_counts: bool = False) -> None:
+def run(
+    cfg_path: str,
+    print_counts: bool = False,
+    cv_fold_index_override: Optional[int] = None,
+) -> None:
     with open(cfg_path, "r", encoding="utf-8") as f:
         cfg = yaml.safe_load(f)
 
@@ -472,6 +476,8 @@ def run(cfg_path: str, print_counts: bool = False) -> None:
     num_workers = int(data_cfg.get("num_workers", 0))
     cv_folds = int(data_cfg.get("cv_folds", 0))
     cv_fold_index = data_cfg.get("cv_fold_index", None)
+    if cv_fold_index_override is not None:
+        cv_fold_index = int(cv_fold_index_override)
     cv_shuffle = bool(data_cfg.get("cv_shuffle", shuffle))
     include_list = data_cfg.get("include_list", None)
     exclude_list = data_cfg.get("exclude_list", None)
@@ -660,5 +666,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, required=True)
     parser.add_argument("--print_counts", action="store_true")
+    parser.add_argument(
+        "--cv_fold_index",
+        type=int,
+        default=None,
+        help="Override data.cv_fold_index from config (0-based).",
+    )
     args = parser.parse_args()
-    run(args.config, print_counts=args.print_counts)
+    run(
+        args.config,
+        print_counts=args.print_counts,
+        cv_fold_index_override=args.cv_fold_index,
+    )
