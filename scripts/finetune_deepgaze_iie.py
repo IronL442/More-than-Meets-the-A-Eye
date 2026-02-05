@@ -533,17 +533,29 @@ def run(
             run_name = wandb_cfg.get("name")
             if fold_suffix:
                 run_name = f"{run_name}_{fold_suffix}" if run_name else fold_suffix
-            wandb_run = wandb.init(
-                project=wandb_cfg.get("project"),
-                entity=wandb_cfg.get("entity"),
-                name=run_name,
-                group=wandb_cfg.get("group"),
-                tags=wandb_cfg.get("tags"),
-                notes=wandb_cfg.get("notes"),
-                dir=wandb_cfg.get("dir", output_dir),
-                mode=wandb_cfg.get("mode"),
-                config=cfg,
-            )
+            try:
+                wandb_run = wandb.init(
+                    project=wandb_cfg.get("project"),
+                    entity=wandb_cfg.get("entity"),
+                    name=run_name,
+                    group=wandb_cfg.get("group"),
+                    tags=wandb_cfg.get("tags"),
+                    notes=wandb_cfg.get("notes"),
+                    dir=wandb_cfg.get("dir", output_dir),
+                    mode=wandb_cfg.get("mode"),
+                    config=cfg,
+                )
+            except Exception as e:
+                msg = str(e)
+                if "api_key not configured" in msg or "wandb.login" in msg:
+                    print(
+                        "[warn] W&B disabled for this run because no API key is configured "
+                        "(non-interactive environment)."
+                    )
+                    wandb_enabled = False
+                    wandb_run = None
+                else:
+                    raise
 
         train_ds = FolderSaliencyDataset(
             train_paths,
