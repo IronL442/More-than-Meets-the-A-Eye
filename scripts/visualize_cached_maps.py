@@ -23,6 +23,27 @@ def compute_entropy(map_arr):
     return -np.sum(normed * np.log(normed + epsilon))
 
 
+def normalize_map(map_arr, mode="max"):
+    arr = np.asarray(map_arr, dtype=np.float32)
+    if mode == "max":
+        vmax = float(arr.max())
+        if vmax > 0:
+            arr = arr / vmax
+    elif mode == "sum":
+        s = float(arr.sum())
+        if s > 0:
+            arr = arr / s
+            vmax = float(arr.max())
+            if vmax > 0:
+                arr = arr / vmax
+    elif mode == "none":
+        pass
+    else:
+        raise ValueError(f"Unknown normalization mode: {mode}")
+
+    return np.clip(arr, 0.0, 1.0)
+
+
 def _resolve_selected_files(npy_files, image_id):
     if image_id is None:
         return npy_files
@@ -40,7 +61,17 @@ def _resolve_selected_files(npy_files, image_id):
     return [target_fname]
 
 
-def main(gt_cache_dir, num_samples, image_id=None):
+def main(
+    gt_cache_dir,
+    num_samples,
+    image_id=None,
+    save_png=False,
+    out_dir="outputs/gt_heatmaps",
+    all_files=False,
+    colormap="hot",
+    normalize="max",
+    no_show=False,
+):
     if not os.path.isdir(gt_cache_dir):
         raise FileNotFoundError(f"{gt_cache_dir} does not exist")
 
@@ -51,20 +82,37 @@ def main(gt_cache_dir, num_samples, image_id=None):
     selected = _resolve_selected_files(npy_files, image_id)
     if image_id is not None:
         print(f"Found {len(npy_files)} maps. Displaying selected image_id: {selected[0][:-4]}")
+        chosen = selected
+    elif all_files:
+        print(f"Found {len(npy_files)} maps. Processing all files...")
+        chosen = selected
     else:
         print(f"Found {len(npy_files)} maps. Displaying {num_samples}...")
+        chosen = selected[:num_samples]
+
+    if save_png:
+        os.makedirs(out_dir, exist_ok=True)
+        print(f"Saving PNG heatmaps to: {out_dir}")
 
     maps = []
     titles = []
 
-    for fname in selected[:num_samples]:
+    for fname in chosen:
         path = os.path.join(gt_cache_dir, fname)
         arr = np.load(path).astype(np.float32)
         entropy = compute_entropy(arr)
-        maps.append(arr)
-        titles.append(f"{fname[:-4]}\nEntropy: {entropy:.3f}")
+        if save_png:
+            out_path = os.path.join(out_dir, f"{fname[:-4]}.png")
+            norm = normalize_map(arr, mode=normalize)
+            plt.imsave(out_path, norm, cmap=colormap, vmin=0.0, vmax=1.0)
+        if not no_show:
+            maps.append(arr)
+            titles.append(f"{fname[:-4]}\nEntropy: {entropy:.3f}")
 
-    visualize_maps(maps, titles)
+    if not no_show:
+        visualize_maps(maps, titles)
+    elif not save_png:
+        print("Nothing to do: --no_show was set and --save_png was not set.")
 
 
 if __name__ == "__main__":
@@ -77,6 +125,47 @@ if __name__ == "__main__":
         default=None,
         help="Specific image id or filename (.npy) to visualize. Overrides list selection.",
     )
+    parser.add_argument("--save_png", action="store_true", help="Save each selected heatmap as PNG")
+    parser.add_argument(
+        "--out_dir",
+        type=str,
+        default="outputs/gt_heatmaps",
+        help="Output directory for saved PNGs",
+    )
+    parser.add_argument(
+        "--all",
+        action="store_true",
+        dest="all_files",
+        help="Process all .npy files in --gt_cache_dir (ignores --num_samples)",
+    )
+    parser.add_argument(
+        "--colormap",
+        type=str,
+        default="hot",
+        help="Matplotlib colormap for saved PNGs (e.g. hot, jet, viridis)",
+    )
+    parser.add_argument(
+        "--normalize",
+        type=str,
+        default="max",
+        choices=["max", "sum", "none"],
+        help="Normalization for saved PNGs",
+    )
+    parser.add_argument(
+        "--no_show",
+        action="store_true",
+        help="Do not open matplotlib window (useful with --save_png)",
+    )
     args = parser.parse_args()
 
-    main(args.gt_cache_dir, args.num_samples, image_id=args.image_id)
+    main(
+        args.gt_cache_dir,
+        args.num_samples,
+        image_id=args.image_id,
+        save_png=args.save_png,
+        out_dir=args.out_dir,
+        all_files=args.all_files,
+        colormap=args.colormap,
+        normalize=args.normalize,
+        no_show=args.no_show,
+    )
