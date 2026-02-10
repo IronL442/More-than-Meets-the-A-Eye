@@ -44,7 +44,7 @@ datasets/                 # dataset adapters (folder, CAT2000, csv_indexed, …)
 models/                   # model adapters (center bias, blur, MSI-Net, DeepGaze, …)
 saliency_bench/core/      # registry, runner, shared interfaces, torch base class
 saliency_bench/utils/     # image ops, fixation→density kernel, heatmap writer
-metrics/metrics.py        # AUC-Judd, sAUC, NSS, CC, KL, SIM
+metrics/metrics.py        # CC, KL(GT||Pred), EMD/Wasserstein-1
 scripts/make_toy_data.py  # generates 3 sample images + GT/fixations
 scripts/create_saliency_notebook.py  # builds notebooks/saliency_viewer.ipynb
 tests/                    # smoke tests for models/datasets/metrics/imports
@@ -97,7 +97,7 @@ datasets:
     root: "data/CAT2000"
     split: "test"
     sigma_px: 19
-    provide_sauc_nonfix: true
+    provide_sauc_nonfix: true  # legacy optional non-fix map sampling
   - name: "csv_indexed"
     index_csv: "data/MIT_like/index.csv"
     split: "val"
@@ -149,7 +149,7 @@ root/
 ### 4.2 CAT2000 Adapter (`datasets/cat2000.py`)
 
 * Expects the canonical CAT2000 layout (images, fixations, gt_maps). Missing GTs can be generated from fixations.
-* `provide_sauc_nonfix: true` optionally samples non-fix maps for sAUC evaluation.
+* `provide_sauc_nonfix: true` optionally samples non-fix maps (legacy option; not used by default KL/CC/EMD metrics).
 
 ### 4.3 CSV-Indexed Adapter (`datasets/csv_indexed.py`)
 
@@ -338,7 +338,7 @@ print(df.head())
     enabled: true
     overlay: true
   ```
-* **Dataset Adapters** – Always normalize GT maps (sum=1). Provide optional `fixations` for NSS/AUC; include `nonfix` for sAUC if available.
+* **Dataset Adapters** – Always normalize GT maps (sum=1) and keep maps non-negative.
 * **Model Outputs** – Ensure predictions are non-negative before postprocess; the default `postprocess` resizes to dataset resolution and renormalizes to sum=1.
 * **Visualization** – Use the notebook viewer or PNG outputs to QA saliency qualitatively alongside quantitative metrics.
 

@@ -1,0 +1,33 @@
+experiment: "miamix_evaluation"
+output_dir: "outputs/miamix/eval/baseline"
+prediction_cache_dir: "predictions"
+cache_predictions: false
+predict_only: false
+
+models:
+  - "deepgaze_iie"
+
+
+active_models:
+  - "deepgaze_iie"
+
+model_kwargs:
+  deepgaze_iie:
+    use_uniform_centerbias: true
+    centerbias_path: "data/centerbias/centerbias_mit1003.npy"
+    weights_path: null   # pretrained
+
+datasets:
+  - name: "folder"
+    root: "MiaMix/augmented_images"
+    split: "test"
+    include_list: "splits/test_aug.txt"
+    gt_subdir: "labels"
+
+heatmaps_png:
+  enabled: true
+  overlay: true
+  normalize: "sum"
+  colormap: "jet"
+  alpha: 0.5
+  out_dir: "outputs/miamix/heatmaps/baseline"

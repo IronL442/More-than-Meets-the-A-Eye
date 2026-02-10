@@ -204,13 +204,17 @@ if __name__ == "__main__":
     # Configuration
     # --------------------------------------------------
     IMAGE_DIR = "data/seminar_data/images"
-    HEATMAP_DIR = "data/seminar_data/heatmaps"
+    HEATMAP_DIR = "data/seminar_data/gt_labels"
+    SPLIT_LIST = "splits/test.txt"
 
     OUTPUT_IMAGE_DIR = "MiaMix/augmented_images/images"
     OUTPUT_LABEL_DIR = "MiaMix/augmented_images/labels"
 
     os.makedirs(OUTPUT_IMAGE_DIR, exist_ok=True)
     os.makedirs(OUTPUT_LABEL_DIR, exist_ok=True)
+
+    if not os.path.isdir(HEATMAP_DIR):
+        raise FileNotFoundError(f"Heatmap directory not found: {HEATMAP_DIR}")
 
     DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -247,8 +251,26 @@ if __name__ == "__main__":
     # --------------------------------------------------
     image_paths = sorted(glob(os.path.join(IMAGE_DIR, "*.jpg")))
 
+    if not os.path.exists(SPLIT_LIST):
+        raise FileNotFoundError(f"Split list not found: {SPLIT_LIST}")
+
+    allowed_ids = set()
+    with open(SPLIT_LIST, "r", encoding="utf-8") as f:
+        for line in f:
+            item = line.strip()
+            if not item:
+                continue
+            allowed_ids.add(os.path.splitext(os.path.basename(item))[0])
+
+    image_paths = [
+        p for p in image_paths
+        if os.path.splitext(os.path.basename(p))[0] in allowed_ids
+    ]
+
     if len(image_paths) == 0:
-        raise RuntimeError("No images found.")
+        raise RuntimeError(
+            f"No images found in {IMAGE_DIR} matching IDs from {SPLIT_LIST}."
+        )
 
     # Initialize MiaMix ONCE
     miamix = MiAMix(

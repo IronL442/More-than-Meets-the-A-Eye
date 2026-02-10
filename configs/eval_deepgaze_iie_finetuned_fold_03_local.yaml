@@ -1,7 +1,7 @@
 experiment: "eval_deepgaze_iie_finetuned_fold_03_local"
-output_dir: "outputs/eval/deepgaze_iie_finetuned_fold_03"
-prediction_cache_dir: "predictions/fold_03"
-cache_predictions: true
+output_dir: "outputs/non_augmented/eval/deepgaze_iie_finetuned_fold_03"
+prediction_cache_dir: "outputs/non_augmented/predictions/fold_03"
+cache_predictions: false
 predict_only: false
 
 models:
@@ -20,6 +20,7 @@ datasets:
     root: "data/seminar_data"
     split: "test"
     include_list: "splits/test.txt"
+    gt_subdir: "gt_maps_mean"
 
 heatmaps_png:
   enabled: true
@@ -27,4 +28,4 @@ heatmaps_png:
   normalize: "max"
   colormap: "jet"
   alpha: 0.5
-  out_dir: "outputs/heatmaps/fold_03"
+  out_dir: "outputs/non_augmented/heatmaps/fold_03"

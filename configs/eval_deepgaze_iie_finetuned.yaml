@@ -1,7 +1,7 @@
 experiment: "eval_deepgaze_iie_finetuned"
 output_dir: "outputs/eval/deepgaze_iie_finetuned"
 prediction_cache_dir: "predictions"
-cache_predictions: true
+cache_predictions: false
 predict_only: false
 
 models:

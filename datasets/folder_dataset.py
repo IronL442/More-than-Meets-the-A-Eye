@@ -33,13 +33,14 @@ class FolderDataset(SaliencyDataset):
         sigma_px: int = 15,
         include_list: str | None = None,
         exclude_list: str | None = None,
+        gt_subdir: str = "gt_maps",
     ):
         self.name = "folder"
         self.root = root
         self.split = split
         self.sigma_px = sigma_px
         self.img_dir = os.path.join(root, "images")
-        self.gt_dir = os.path.join(root, "gt_maps")
+        self.gt_dir = os.path.join(root, gt_subdir)
         self.fix_dir = os.path.join(root, "fixations")
 
         exts = ("*.jpg", "*.jpeg", "*.png", "*.bmp")
@@ -70,6 +71,26 @@ class FolderDataset(SaliencyDataset):
                 ids.add(FolderDataset._stem(item))
         return ids
 
+    def _load_gt_map(self, stem: str) -> Optional[np.ndarray]:
+        npy_path = os.path.join(self.gt_dir, stem + ".npy")
+        if os.path.exists(npy_path):
+            return np.load(npy_path).astype(np.float32)
+
+        for ext in (".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff"):
+            img_path = os.path.join(self.gt_dir, stem + ext)
+            if not os.path.exists(img_path):
+                continue
+            img = cv2.imread(img_path, cv2.IMREAD_UNCHANGED)
+            if img is None:
+                continue
+            if img.ndim == 3:
+                if img.shape[2] == 4:
+                    img = cv2.cvtColor(img, cv2.COLOR_BGRA2GRAY)
+                else:
+                    img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            return img.astype(np.float32)
+        return None
+
     def __iter__(self) -> Iterator[Dict[str, Any]]:
         for p in self.img_paths:
             stem = os.path.splitext(os.path.basename(p))[0]
@@ -80,10 +101,7 @@ class FolderDataset(SaliencyDataset):
             img = to_rgb_uint8(img)
             H, W = img.shape[:2]
 
-            gt_path = os.path.join(self.gt_dir, stem + ".npy")
-            gt: Optional[np.ndarray] = None
-            if os.path.exists(gt_path):
-                gt = np.load(gt_path).astype(np.float32)
+            gt: Optional[np.ndarray] = self._load_gt_map(stem)
 
             fix_path = os.path.join(self.fix_dir, stem + ".npy")
             fix: Optional[np.ndarray] = None

@@ -21,7 +21,7 @@ class CAT2000(SaliencyDataset):
     Notes:
     - The official *testSet* does NOT include fixations/GT maps.
       We therefore yield a uniform gt_map so inference/caching works.
-      Metrics depending on fixations (AUC/NSS/sAUC) will be NaN.
+      Default KL/CC/EMD metrics remain valid against this fallback GT.
     - If you later place *.npy fixations or gt_maps under root/fixations or root/gt_maps
       with IDs matching the generated 'image_id', they will be used automatically.
     """
@@ -61,7 +61,7 @@ class CAT2000(SaliencyDataset):
             return f"{cat}_{stem}"
 
         self.items: List[Tuple[str, str]] = [(make_id(p), p) for p in paths]
-        self.ids = [iid for iid, _ in self.items]  # keep for sAUC pool logic
+        self.ids = [iid for iid, _ in self.items]  # keep for optional non-fix sampling
 
     # --- loaders ---
 
@@ -92,7 +92,7 @@ class CAT2000(SaliencyDataset):
                 img_id = os.path.splitext(os.path.basename(p))[0]
                 self.items.append((img_id, p))
 
-        # Preload pool for sAUC (only meaningful if fixations exist)
+        # Preload pool for optional non-fix sampling (if enabled)
         pool = None
         if self.provide_sauc_nonfix:
             pool = [self._load_fix(i) for i in self.ids]
@@ -119,7 +119,7 @@ class CAT2000(SaliencyDataset):
             }
 
             if pool is not None and fix is not None:
-                # sAUC: pick non-fixations from a random other image of same shape
+                # Pick non-fixations from a random other image of same shape.
                 nonfix = None
                 for _ in range(10):
                     j = random.randrange(0, len(self.ids))

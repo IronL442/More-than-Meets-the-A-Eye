@@ -1,7 +1,7 @@
 experiment: "baseline_seminar_heldout"
 output_dir: "outputs/eval/baseline_seminar"
 prediction_cache_dir: "predictions"
-cache_predictions: true
+cache_predictions: false
 predict_only: false
 
 models:
@@ -13,7 +13,7 @@ active_models:
 
 model_kwargs:
   deepgaze_iie:
-    use_uniform_centerbias: false
+    use_uniform_centerbias: true
     centerbias_path: "data/centerbias/centerbias_mit1003.npy"
     weights_path: null   # pretrained
 

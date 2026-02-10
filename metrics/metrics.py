@@ -1,66 +1,97 @@
+from __future__ import annotations
+
 import numpy as np
 
-_TRAPZ = getattr(np, "trapezoid", np.trapz)
+try:
+    import cv2  # type: ignore
+except ImportError:
+    cv2 = None
 
 
-from saliency_bench.utils.image_ops import renorm_prob, zscore
+def _normalize_prob(
+    m: np.ndarray,
+    *,
+    eps: float = 0.0,
+    dtype: np.dtype = np.float32,
+) -> np.ndarray:
+    arr = np.asarray(m, dtype=dtype)
+    arr = np.clip(arr, 0.0, None)
+    if eps > 0.0:
+        arr = arr + np.asarray(eps, dtype=dtype)
+    s = float(arr.sum())
+    if s <= 0.0:
+        h, w = arr.shape
+        return np.full((h, w), 1.0 / (h * w), dtype=dtype)
+    return (arr / s).astype(dtype, copy=False)
 
 
-def _fixation_coords(fix_bin: np.ndarray):
-    ys, xs = np.nonzero(fix_bin > 0)
-    return np.stack([ys, xs], axis=1) if len(ys) else np.zeros((0, 2), dtype=int)
-
-
-def auc_judd(pred: np.ndarray, fix_bin: np.ndarray, num_thresh: int = 100) -> float:
-    pred = (pred - pred.min()) / (np.ptp(pred) + 1e-8)
-    yx = _fixation_coords(fix_bin)
-    if yx.shape[0] == 0:
-        return float("nan")
-    fix_scores = pred[yx[:, 0], yx[:, 1]]
-    thresholds = np.linspace(0, 1, num_thresh)
-    tp = np.array([(fix_scores >= t).mean() for t in thresholds])
-    fp = np.array([(pred >= t).mean() for t in thresholds])
-    return float(_TRAPZ(tp, fp))
-
-
-def nss(pred: np.ndarray, fix_bin: np.ndarray) -> float:
-    yx = _fixation_coords(fix_bin)
-    if yx.shape[0] == 0:
-        return float("nan")
-    z = zscore(pred)
-    return float(z[yx[:, 0], yx[:, 1]].mean())
-
-
-def cc(pred: np.ndarray, gt_map: np.ndarray) -> float:
-    p = pred - pred.mean()
-    g = gt_map - gt_map.mean()
-    denom = p.std() * g.std() + 1e-8
+def cc(pred: np.ndarray, gt_map: np.ndarray, eps: float = 1e-8) -> float:
+    p = _normalize_prob(pred, dtype=np.float32)
+    g = _normalize_prob(gt_map, dtype=np.float32)
+    p = p - p.mean()
+    g = g - g.mean()
+    denom = float(p.std() * g.std() + eps)
     return float((p * g).mean() / denom)
 
 
-def kl_div(pred: np.ndarray, gt_map: np.ndarray) -> float:
-    p = renorm_prob(pred)
-    g = renorm_prob(gt_map)
-    return float((g * (np.log((g + 1e-8) / (p + 1e-8)))).sum())
-
-
-def sim_score(pred: np.ndarray, gt_map: np.ndarray) -> float:
-    p = renorm_prob(pred)
-    g = renorm_prob(gt_map)
-    return float(np.minimum(p, g).sum())
-
-
-def sauc(
-    pred: np.ndarray, fix_bin: np.ndarray, nonfix_bin: np.ndarray, num_thresh: int = 100
+def kl_div(
+    pred: np.ndarray,
+    gt_map: np.ndarray,
+    *,
+    eps: float = 1e-7,
+    use_float64: bool = True,
 ) -> float:
-    pred = (pred - pred.min()) / (np.ptp(pred) + 1e-8)
-    yx_fix = _fixation_coords(fix_bin)
-    yx_non = _fixation_coords(nonfix_bin)
-    if yx_fix.shape[0] == 0 or yx_non.shape[0] == 0:
-        return float("nan")
-    fix_scores = pred[yx_fix[:, 0], yx_fix[:, 1]]
-    non_scores = pred[yx_non[:, 0], yx_non[:, 1]]
-    thresholds = np.linspace(0, 1, num_thresh)
-    tp = np.array([(fix_scores >= t).mean() for t in thresholds])
-    fp = np.array([(non_scores >= t).mean() for t in thresholds])
-    return float(_TRAPZ(tp, fp))
+    # KL(GT || Pred)
+    dtype = np.float64 if use_float64 else np.float32
+    p = _normalize_prob(pred, eps=eps, dtype=dtype)
+    g = _normalize_prob(gt_map, eps=eps, dtype=dtype)
+    return float(np.sum(g * (np.log(g) - np.log(p)), dtype=dtype))
+
+
+def _emd_1d_from_marginals(p: np.ndarray, g: np.ndarray) -> float:
+    p_x = p.sum(axis=0)
+    g_x = g.sum(axis=0)
+    p_y = p.sum(axis=1)
+    g_y = g.sum(axis=1)
+    cdf_dx = np.abs(np.cumsum(p_x) - np.cumsum(g_x)).sum()
+    cdf_dy = np.abs(np.cumsum(p_y) - np.cumsum(g_y)).sum()
+    return float(np.sqrt(cdf_dx * cdf_dx + cdf_dy * cdf_dy))
+
+
+def _resize_map(m: np.ndarray, hw: tuple[int, int]) -> np.ndarray:
+    h, w = hw
+    arr = np.asarray(m, dtype=np.float32)
+    if arr.shape == (h, w):
+        return arr
+    if cv2 is not None:
+        return cv2.resize(arr, (w, h), interpolation=cv2.INTER_AREA)
+
+    # Fallback if OpenCV is unavailable: nearest-grid resampling.
+    h0, w0 = arr.shape
+    ys = np.linspace(0, h0 - 1, h).round().astype(np.int32)
+    xs = np.linspace(0, w0 - 1, w).round().astype(np.int32)
+    return arr[np.ix_(ys, xs)].astype(np.float32)
+
+
+def emd_wasserstein(
+    pred: np.ndarray,
+    gt_map: np.ndarray,
+    *,
+    downsample_hw: tuple[int, int] = (40, 40),
+    eps: float = 1e-7,
+) -> float:
+    h, w = downsample_hw
+    p = _resize_map(pred, (h, w))
+    g = _resize_map(gt_map, (h, w))
+    p = _normalize_prob(p, eps=eps, dtype=np.float32)
+    g = _normalize_prob(g, eps=eps, dtype=np.float32)
+
+    ys, xs = np.indices((h, w), dtype=np.float32)
+    coords = np.stack([xs.ravel(), ys.ravel()], axis=1)
+    sig_p = np.concatenate([p.reshape(-1, 1), coords], axis=1).astype(np.float32)
+    sig_g = np.concatenate([g.reshape(-1, 1), coords], axis=1).astype(np.float32)
+
+    if cv2 is not None and hasattr(cv2, "EMD"):
+        dist, _, _ = cv2.EMD(sig_p, sig_g, cv2.DIST_L2)
+        return float(dist)
+    return _emd_1d_from_marginals(p, g)

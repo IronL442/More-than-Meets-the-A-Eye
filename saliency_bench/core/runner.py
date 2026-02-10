@@ -7,7 +7,7 @@ import pandas as pd
 import yaml
 from tqdm import tqdm
 
-from metrics.metrics import auc_judd, cc, kl_div, nss, sauc, sim_score
+from metrics.metrics import cc, emd_wasserstein, kl_div
 from saliency_bench.core.registry import build
 from saliency_bench.utils.image_ops import renorm_prob
 from saliency_bench.utils.heatmap_viz import save_heatmap_png, save_overlay_png
@@ -22,20 +22,68 @@ def _import_adapters():
             import_module(f"{pkg_name}.{mod_name}")
 
 
-def compute_metrics(pred: np.ndarray, sample: Dict[str, Any]) -> Dict[str, float]:
+def _gaussian_centerbias_map(
+    hw: tuple[int, int],
+    sigma_frac: float = 0.25,
+) -> np.ndarray:
+    h, w = hw
+    ys, xs = np.indices((h, w), dtype=np.float32)
+    cy = (h - 1) * 0.5
+    cx = (w - 1) * 0.5
+    sigma = float(max(h, w) * sigma_frac)
+    sigma2 = max(sigma * sigma, 1e-8)
+    g = np.exp(-((xs - cx) ** 2 + (ys - cy) ** 2) / (2.0 * sigma2))
+    return renorm_prob(g)
+
+
+def _prep_prob_map(m: np.ndarray) -> np.ndarray:
+    m = np.asarray(m, dtype=np.float32)
+    m = np.clip(m, 0.0, None)
+    return renorm_prob(m)
+
+
+def compute_metrics(
+    pred: np.ndarray,
+    sample: Dict[str, Any],
+    *,
+    kl_epsilon: float = 1e-7,
+    emd_downsample_hw: tuple[int, int] = (40, 40),
+    include_uniform_baseline: bool = True,
+    include_centerbias_baseline: bool = False,
+    centerbias_sigma_frac: float = 0.25,
+) -> Dict[str, float]:
     gt = sample["gt_map"].astype(np.float32)
-    fix = sample.get("fixations", None)
+    h, w = gt.shape
+    gt = _prep_prob_map(gt)
+    pred = _prep_prob_map(pred)
+
     out = {
-        "AUC_Judd": auc_judd(pred, fix) if fix is not None else np.nan,
-        "NSS": nss(pred, fix) if fix is not None else np.nan,
         "CC": cc(pred, gt),
-        "KL": kl_div(pred, gt),
-        "SIM": sim_score(pred, gt),
+        "KL": kl_div(pred, gt, eps=kl_epsilon),
+        "EMD": emd_wasserstein(pred, gt, downsample_hw=emd_downsample_hw, eps=kl_epsilon),
     }
-    if "nonfix" in sample and sample["nonfix"] is not None and fix is not None:
-        out["sAUC"] = sauc(pred, fix, sample["nonfix"])
-    else:
-        out["sAUC"] = np.nan
+
+    if include_uniform_baseline:
+        uniform = np.full((h, w), 1.0 / (h * w), dtype=np.float32)
+        out["CC_uniform"] = cc(uniform, gt)
+        out["KL_uniform"] = kl_div(uniform, gt, eps=kl_epsilon)
+        out["EMD_uniform"] = emd_wasserstein(
+            uniform,
+            gt,
+            downsample_hw=emd_downsample_hw,
+            eps=kl_epsilon,
+        )
+
+    if include_centerbias_baseline:
+        center_b = _gaussian_centerbias_map((h, w), sigma_frac=centerbias_sigma_frac)
+        out["CC_centerbias"] = cc(center_b, gt)
+        out["KL_centerbias"] = kl_div(center_b, gt, eps=kl_epsilon)
+        out["EMD_centerbias"] = emd_wasserstein(
+            center_b,
+            gt,
+            downsample_hw=emd_downsample_hw,
+            eps=kl_epsilon,
+        )
     return out
 
 
@@ -52,6 +100,17 @@ def run_experiment(cfg_path: str):
     png_cmap = str(viz_cfg.get("colormap", "jet"))
     png_alpha = float(viz_cfg.get("alpha", 0.5))
     png_dir = str(viz_cfg.get("out_dir", "outputs/heatmaps"))
+    eval_cfg = cfg.get("evaluation", {})
+    kl_epsilon = float(eval_cfg.get("kl_epsilon", 1e-7))
+    emd_hw_raw = eval_cfg.get("emd_downsample_hw", [40, 40])
+    if not isinstance(emd_hw_raw, (list, tuple)) or len(emd_hw_raw) != 2:
+        raise ValueError("evaluation.emd_downsample_hw must be a 2-item list/tuple [H, W].")
+    emd_downsample_hw = (int(emd_hw_raw[0]), int(emd_hw_raw[1]))
+    if emd_downsample_hw[0] <= 0 or emd_downsample_hw[1] <= 0:
+        raise ValueError("evaluation.emd_downsample_hw values must be positive.")
+    include_uniform_baseline = bool(eval_cfg.get("include_uniform_baseline", True))
+    include_centerbias_baseline = bool(eval_cfg.get("include_centerbias_baseline", False))
+    centerbias_sigma_frac = float(eval_cfg.get("centerbias_sigma_frac", 0.25))
 
     _import_adapters()
 
@@ -120,7 +179,15 @@ def run_experiment(cfg_path: str):
                         "image_id": sample["image_id"],
                     }
                 else:
-                    metrics = compute_metrics(pred, sample)
+                    metrics = compute_metrics(
+                        pred,
+                        sample,
+                        kl_epsilon=kl_epsilon,
+                        emd_downsample_hw=emd_downsample_hw,
+                        include_uniform_baseline=include_uniform_baseline,
+                        include_centerbias_baseline=include_centerbias_baseline,
+                        centerbias_sigma_frac=centerbias_sigma_frac,
+                    )
                     row = {
                         "dataset": ds.name,
                         "split": getattr(ds, "split", "NA"),
