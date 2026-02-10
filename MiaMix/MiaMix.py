@@ -204,8 +204,8 @@ if __name__ == "__main__":
     # Configuration
     # --------------------------------------------------
     IMAGE_DIR = "data/seminar_data/images"
-    HEATMAP_DIR = "data/seminar_data/gt_labels"
-    SPLIT_LIST = "splits/test.txt"
+    HEATMAP_DIR = "data/seminar_data/gt_maps"
+    SPLIT_LIST = "splits/trainval.txt"
 
     OUTPUT_IMAGE_DIR = "MiaMix/augmented_images/images"
     OUTPUT_LABEL_DIR = "MiaMix/augmented_images/labels"
