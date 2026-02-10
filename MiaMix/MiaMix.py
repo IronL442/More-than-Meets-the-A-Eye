@@ -14,6 +14,17 @@ from torchvision.utils import save_image
 Tensor = torch.Tensor
 
 
+def to_prob_map(arr: np.ndarray) -> np.ndarray:
+    """Convert a non-negative saliency map to a normalized probability map."""
+    arr = np.asarray(arr, dtype=np.float32)
+    arr = np.clip(arr, 0.0, None)
+    total = float(arr.sum())
+    if total > 0.0:
+        return arr / total
+    h, w = arr.shape
+    return np.full((h, w), 1.0 / float(h * w), dtype=np.float32)
+
+
 # -------------------------------------------------------
 # Utility: Dirichlet sampling (λ₁…λₖ₊₁)
 # -------------------------------------------------------
@@ -209,9 +220,11 @@ if __name__ == "__main__":
 
     OUTPUT_IMAGE_DIR = "MiaMix/augmented_images/images"
     OUTPUT_LABEL_DIR = "MiaMix/augmented_images/labels"
+    OUTPUT_GT_MAPS_DIR = "MiaMix/augmented_images/gt_maps"
 
     os.makedirs(OUTPUT_IMAGE_DIR, exist_ok=True)
     os.makedirs(OUTPUT_LABEL_DIR, exist_ok=True)
+    os.makedirs(OUTPUT_GT_MAPS_DIR, exist_ok=True)
 
     if not os.path.isdir(HEATMAP_DIR):
         raise FileNotFoundError(f"Heatmap directory not found: {HEATMAP_DIR}")
@@ -289,7 +302,7 @@ if __name__ == "__main__":
 
         batch_paths = image_paths[batch_start: batch_start + BATCH_SIZE]
 
-        imgs, hmaps, names = [], [], []
+        imgs, hmaps, names, annotator_counts = [], [], [], []
 
         for path in batch_paths:
             base = os.path.splitext(os.path.basename(path))[0]
@@ -323,6 +336,7 @@ if __name__ == "__main__":
             # Replicate to match channel dimensions and append to batch
             hmaps.append(avg_hmap.repeat(NUM_CLASSES, 1, 1))
             names.append(base)
+            annotator_counts.append(len(heatmap_matches))
 
         # Skip if no valid samples were found in this batch
         if len(imgs) == 0:
@@ -351,8 +365,18 @@ if __name__ == "__main__":
                 y_mix[i][0],
                 os.path.join(OUTPUT_LABEL_DIR, f"{names[i]}_AUG.png")
             )
+            # Save finetune-ready GT map as .npy probability map.
+            y_np = y_mix[i][0].detach().cpu().numpy()
+            y_np = to_prob_map(y_np)
+            np.save(
+                os.path.join(OUTPUT_GT_MAPS_DIR, f"{names[i]}_AUG.npy"),
+                y_np.astype(np.float32),
+            )
 
             mix_type = "SELF-MIX" if self_mix_flags[i] else "CROSS-MIX"
-            print(f"Saved augmented sample for {names[i]} | Mix: {mix_type} | Annotators averaged: {len(heatmap_matches)}")
+            print(
+                f"Saved augmented sample for {names[i]} | Mix: {mix_type} | "
+                f"Annotators averaged: {annotator_counts[i]}"
+            )
 
     print("\nMiaMix augmentation with multi-person averaging finished successfully.")
