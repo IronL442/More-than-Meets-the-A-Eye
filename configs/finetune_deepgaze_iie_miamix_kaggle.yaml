@@ -5,7 +5,7 @@ seed: 1337
 data:
   # Expects MiaMix/augmented_images/{images,gt_maps} where gt_maps are .npy files.
   # Generate gt_maps via MiaMix/MiaMix.py (it now saves finetune-ready .npy maps).
-  root: "/kaggle/input/miamix/MiaMix/augmented_images"
+  root: "/kaggle/input/datasets/lauritseisengarten/miamix/MiaMix/augmented_images"
   cv_folds: 4          # >= 2 enables CV
   cv_fold_index: null  # set to 0..3 to run a single fold
   cv_shuffle: true     # optional, defaults to data.shuffle

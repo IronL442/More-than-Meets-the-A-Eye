@@ -37,6 +37,20 @@ run_fold() {
   echo "[launch] pid=${LAST_PID} fold=${fold}" >&2
 }
 
+report_failure() {
+  local fold="$1"
+  local pid="$2"
+  local gpu="$3"
+  local log_file="${LOG_DIR}/fold_${fold}_gpu_${gpu}.log"
+  echo "[error] fold=${fold} failed (pid=${pid})"
+  if [[ -f "${log_file}" ]]; then
+    echo "[error] tail of ${log_file}:"
+    tail -n 120 "${log_file}"
+  else
+    echo "[error] log file not found: ${log_file}"
+  fi
+}
+
 i=0
 while [[ $i -lt ${#FOLDS[@]} ]]; do
   fold_a="${FOLDS[$i]}"
@@ -51,12 +65,12 @@ while [[ $i -lt ${#FOLDS[@]} ]]; do
   fi
 
   wait "${pid_a}" || {
-    echo "[error] fold=${fold_a} failed (pid=${pid_a})"
+    report_failure "${fold_a}" "${pid_a}" 0
     exit 1
   }
   if [[ -n "${pid_b}" ]]; then
     wait "${pid_b}" || {
-      echo "[error] fold=${fold_b} failed (pid=${pid_b})"
+      report_failure "${fold_b}" "${pid_b}" 1
       exit 1
     }
   fi
