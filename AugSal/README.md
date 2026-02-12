@@ -93,6 +93,7 @@ And selected maps can be saved to `selected_attention_maps/` if `cross_attention
 Kaggle configs are included:
 - `AugSal/configs/kaggle_opencv.yaml`
 - `AugSal/configs/kaggle_diffusers_img2img.yaml`
+- `AugSal/configs/kaggle_diffusers_lowmem.yaml`
 
 ### Single-GPU run
 
@@ -108,8 +109,11 @@ python AugSal/pipeline.py --config AugSal/configs/kaggle_diffusers_img2img.yaml
 This launches two shard jobs (one per GPU), then merges outputs:
 
 ```bash
-bash AugSal/scripts/run_pipeline_kaggle_t4x2.sh AugSal/configs/kaggle_diffusers_img2img.yaml
+bash AugSal/scripts/run_pipeline_kaggle_t4x2.sh AugSal/configs/kaggle_diffusers_lowmem.yaml
 ```
+
+The launcher now auto-falls back to a single-GPU run if a shard fails (for example, OOM).
+You can disable fallback by setting `AUTO_FALLBACK_SINGLE=0`.
 
 Merged output is written to:
 - `/kaggle/working/AugSal/augmented_data`
