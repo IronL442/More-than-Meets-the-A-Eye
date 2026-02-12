@@ -114,6 +114,11 @@ bash AugSal/scripts/run_pipeline_kaggle_t4x2.sh AugSal/configs/kaggle_diffusers_
 
 The launcher now auto-falls back to a single-GPU run if a shard fails (for example, OOM).
 You can disable fallback by setting `AUTO_FALLBACK_SINGLE=0`.
+If you still see CUDA OOM, force single-shard directly:
+
+```bash
+NUM_SHARDS=1 bash AugSal/scripts/run_pipeline_kaggle_t4x2.sh
+```
 
 Merged output is written to:
 - `/kaggle/working/AugSal/augmented_data`

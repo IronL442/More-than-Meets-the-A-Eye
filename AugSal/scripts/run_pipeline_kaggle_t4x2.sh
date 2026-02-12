@@ -16,6 +16,7 @@ PYTHON_BIN="${PYTHON_BIN:-python}"
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   PYTHON_BIN="python3"
 fi
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 
 NUM_SHARDS="${NUM_SHARDS:-2}"
 if [[ "${NUM_SHARDS}" -ne 2 ]]; then

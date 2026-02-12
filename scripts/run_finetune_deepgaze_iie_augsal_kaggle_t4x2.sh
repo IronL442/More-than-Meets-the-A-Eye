@@ -15,6 +15,7 @@ LOG_DIR="${LOG_DIR:-/kaggle/working/outputs/finetune_augsal/logs}"
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   PYTHON_BIN="python3"
 fi
+export PYTORCH_CUDA_ALLOC_CONF="${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}"
 mkdir -p "${LOG_DIR}"
 
 if [[ $# -gt 0 ]]; then

@@ -42,10 +42,17 @@ generation:
     model_id: "stabilityai/sd-turbo"
     device: "cuda"
     torch_dtype: "float16"
+    max_side: 768
     strength: 0.30
     guidance_scale: 0.0
     num_inference_steps: 6
     use_safetensors: true
+    enable_attention_slicing: true
+    enable_vae_slicing: true
+    enable_vae_tiling: true
+    enable_model_cpu_offload: true
+    enable_sequential_cpu_offload: false
+    enable_xformers_memory_efficient_attention: false
     cross_attention:
       enabled: false
       map_hw: [64, 64]

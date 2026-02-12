@@ -487,6 +487,15 @@ class DiffusersImg2ImgBackend(AugmentationBackend):
         self.guidance_scale = float(raw.get("guidance_scale", 5.0))
         self.num_inference_steps = int(raw.get("num_inference_steps", 20))
         self.device = str(raw.get("device", "auto"))
+        self.max_side = int(raw.get("max_side", 0) or 0)
+        self.enable_attention_slicing = bool(raw.get("enable_attention_slicing", False))
+        self.enable_vae_slicing = bool(raw.get("enable_vae_slicing", False))
+        self.enable_vae_tiling = bool(raw.get("enable_vae_tiling", False))
+        self.enable_model_cpu_offload = bool(raw.get("enable_model_cpu_offload", False))
+        self.enable_sequential_cpu_offload = bool(raw.get("enable_sequential_cpu_offload", False))
+        self.enable_xformers_memory_efficient_attention = bool(
+            raw.get("enable_xformers_memory_efficient_attention", False)
+        )
         cross_cfg = raw.get("cross_attention", {}) or {}
         self.capture_cross_attention = bool(cross_cfg.get("enabled", False))
         map_hw_raw = cross_cfg.get("map_hw", [64, 64])
@@ -536,7 +545,29 @@ class DiffusersImg2ImgBackend(AugmentationBackend):
         else:
             device = self.device
         self.device = device
-        self.pipe.to(device)
+        if str(device).startswith("cuda"):
+            if self.enable_sequential_cpu_offload:
+                self.pipe.enable_sequential_cpu_offload()
+            elif self.enable_model_cpu_offload:
+                self.pipe.enable_model_cpu_offload()
+            else:
+                self.pipe.to(device)
+
+            if self.enable_attention_slicing and hasattr(self.pipe, "enable_attention_slicing"):
+                self.pipe.enable_attention_slicing()
+            if self.enable_vae_slicing and hasattr(self.pipe, "enable_vae_slicing"):
+                self.pipe.enable_vae_slicing()
+            if self.enable_vae_tiling and hasattr(self.pipe, "enable_vae_tiling"):
+                self.pipe.enable_vae_tiling()
+            if self.enable_xformers_memory_efficient_attention and hasattr(
+                self.pipe, "enable_xformers_memory_efficient_attention"
+            ):
+                try:
+                    self.pipe.enable_xformers_memory_efficient_attention()
+                except Exception:
+                    pass
+        else:
+            self.pipe.to(device)
 
         self._recorder: _CrossAttentionRecorder | None = None
         if self.capture_cross_attention:
@@ -584,6 +615,17 @@ class DiffusersImg2ImgBackend(AugmentationBackend):
             tokens = [str(tokenizer.decode([int(i)])) for i in ids]
         return [int(i) for i in ids], tokens
 
+    def _prepare_img2img_input(self, image_rgb: np.ndarray) -> tuple[np.ndarray, tuple[int, int]]:
+        h, w = image_rgb.shape[:2]
+        if self.max_side <= 0 or max(h, w) <= self.max_side:
+            return image_rgb, (h, w)
+
+        scale = float(self.max_side) / float(max(h, w))
+        new_h = max(64, int(round((h * scale) / 8.0) * 8))
+        new_w = max(64, int(round((w * scale) / 8.0) * 8))
+        resized = cv2.resize(image_rgb, (new_w, new_h), interpolation=cv2.INTER_AREA)
+        return resized, (h, w)
+
     def generate_with_aux(
         self,
         image_rgb: np.ndarray,
@@ -599,8 +641,8 @@ class DiffusersImg2ImgBackend(AugmentationBackend):
         if self.capture_cross_attention and self._recorder is not None:
             self._recorder.reset()
 
-        h, w = image_rgb.shape[:2]
-        pil_image = Image.fromarray(image_rgb)
+        proc_rgb, (h, w) = self._prepare_img2img_input(image_rgb)
+        pil_image = Image.fromarray(proc_rgb)
 
         generator = self._torch.Generator(device=self.device)
         generator.manual_seed(int(seed))
