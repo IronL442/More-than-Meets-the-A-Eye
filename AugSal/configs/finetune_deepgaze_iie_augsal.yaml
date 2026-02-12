@@ -4,7 +4,7 @@ seed: 1337
 
 data:
   root: "AugSal/augmented_data"
-  cv_folds: 4
+  cv_folds: 2
   cv_fold_index: null
   cv_shuffle: true
   shuffle: true
