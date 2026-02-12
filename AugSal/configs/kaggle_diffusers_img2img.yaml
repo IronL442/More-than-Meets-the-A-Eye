@@ -1,12 +1,14 @@
 input:
-  image_dir: "data/seminar_data/images"
-  gt_mean_dir: "data/seminar_data/gt_maps_mean"
-  captions_json: "data/seminar_data/image_captions.json"
-  include_list: "splits/trainval.txt"
+  # Point this to your Kaggle input dataset mount.
+  image_dir: "/kaggle/input/seminar-data/seminar_data/images"
+  gt_mean_dir: "/kaggle/input/seminar-data/seminar_data/gt_maps_mean"
+  captions_json: "/kaggle/input/seminar-data/seminar_data/image_captions.json"
+  # Recommended: provide a train-only list to avoid test leakage.
+  include_list: "/kaggle/working/splits/trainval.txt"
   exclude_list: null
 
 output:
-  root: "AugSal/augmented_data_diffusers"
+  root: "/kaggle/working/AugSal/augmented_data_diffusers"
   images_subdir: "images"
   gt_subdir: "gt_maps"
   metadata_csv: "metadata.csv"
@@ -24,10 +26,10 @@ generation:
   jpg_quality: 95
 
   opencv:
-    max_rotation_deg: 7.0
+    max_rotation_deg: 15.0
     max_shift_ratio: 0.04
-    min_scale: 0.96
-    max_scale: 1.04
+    min_scale: 0.95
+    max_scale: 1.05
     perspective_prob: 0.35
     perspective_jitter_ratio: 0.03
     brightness_delta: 20.0
@@ -37,7 +39,7 @@ generation:
 
   diffusers:
     model_id: "stabilityai/sdxl-turbo"
-    device: "auto"
+    device: "cuda"
     torch_dtype: "float16"
     strength: 0.35
     guidance_scale: 5.0

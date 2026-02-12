@@ -1,12 +1,14 @@
 input:
-  image_dir: "data/seminar_data/images"
-  gt_mean_dir: "data/seminar_data/gt_maps_mean"
-  captions_json: "data/seminar_data/image_captions.json"
-  include_list: "splits/trainval.txt"
+  # Point this to your Kaggle input dataset mount.
+  image_dir: "/kaggle/input/seminar-data/seminar_data/images"
+  gt_mean_dir: "/kaggle/input/seminar-data/seminar_data/gt_maps_mean"
+  captions_json: "/kaggle/input/seminar-data/seminar_data/image_captions.json"
+  # Recommended: provide a train-only list to avoid test leakage.
+  include_list: null
   exclude_list: null
 
 output:
-  root: "AugSal/augmented_data_diffusers"
+  root: "/kaggle/working/AugSal/augmented_data"
   images_subdir: "images"
   gt_subdir: "gt_maps"
   metadata_csv: "metadata.csv"
@@ -17,17 +19,17 @@ output:
   overwrite: true
 
 generation:
-  backend: "diffusers_img2img"
+  backend: "opencv_caption_style"
   seed: 1337
   num_augs_per_image: 1
   image_ext: ".jpg"
   jpg_quality: 95
 
   opencv:
-    max_rotation_deg: 7.0
+    max_rotation_deg: 15.0
     max_shift_ratio: 0.04
-    min_scale: 0.96
-    max_scale: 1.04
+    min_scale: 0.95
+    max_scale: 1.05
     perspective_prob: 0.35
     perspective_jitter_ratio: 0.03
     brightness_delta: 20.0
@@ -43,15 +45,6 @@ generation:
     guidance_scale: 5.0
     num_inference_steps: 20
     use_safetensors: true
-    cross_attention:
-      enabled: true
-      map_hw: [64, 64]
-      layer_name_contains: "attn2"
-      include_special_tokens: false
-      max_token_maps: 77
-
-prompting:
-  negative_prompt: "extra people, duplicated limbs, text overlays, logos, watermarks, cartoon style, surreal artifacts"
 
 pseudo_label:
   diff_weight: 0.35
@@ -63,11 +56,11 @@ pseudo_label:
   smooth_sigma: 2.0
 
 cross_attention:
-  enabled: true
+  enabled: false
   use_for_pseudo_label: true
   blend_weight: 0.5
   min_token_chars: 2
-  save_selected_maps: true
+  save_selected_maps: false
   selected_maps_subdir: "selected_attention_maps"
 
 runtime:

@@ -1,11 +1,11 @@
-experiment: "deepgaze_iie_finetune_miamix_kaggle"
-output_dir: "/kaggle/working/outputs/finetune_miamix/deepgaze_iie"
+experiment: "deepgaze_iie_finetune_augsal_kaggle"
+output_dir: "/kaggle/working/outputs/finetune_augsal/deepgaze_iie"
 seed: 1337
 
 data:
-  # Expects MiaMix/augmented_images/{images,gt_maps} where gt_maps are .npy files.
-  # Generate gt_maps via MiaMix/MiaMix.py (it now saves finetune-ready .npy maps).
-  root: "/kaggle/input/datasets/"
+  # AugSal output root containing {images, gt_maps}.
+  # Default merged output from AugSal/scripts/run_pipeline_kaggle_t4x2.sh
+  root: "/kaggle/working/AugSal/augmented_data"
   cv_folds: 4          # >= 2 enables CV
   cv_fold_index: null  # set to 0..3 to run a single fold
   cv_shuffle: true     # optional, defaults to data.shuffle
@@ -15,7 +15,7 @@ data:
   num_workers: 2
   gt_aggregate: "mean"
   gt_resize_interp: "bilinear"
-  # Optional cache dir for precomputed mean GT maps. Set null to compute on the fly.
+  # AugSal already writes one .npy map per image in root/gt_maps.
   gt_cache_dir: null
   exclude_list: null
   allow_uniform_gt: false
@@ -54,9 +54,9 @@ wandb:
   enabled: true
   project: "deepgaze-iie-saliency"
   entity: null
-  name: "finetuned-miamix"
+  name: "finetuned-augsal"
   group: "finetune-vs-baseline"
-  tags: ["deepgaze", "finetune", "cv", "miamix"]
-  notes: "4-fold CV fine-tuning on MiAMix augmented_images (images + gt_maps)"
+  tags: ["deepgaze", "finetune", "cv", "augsal"]
+  notes: "4-fold CV fine-tuning on AugSal augmented_data (images + pseudo gt_maps)"
   dir: "/kaggle/working/wandb_logs"
   mode: "online"

@@ -107,6 +107,9 @@ def run(
     max_images_override: int | None = None,
     backend_override: str | None = None,
     seed_override: int | None = None,
+    output_root_override: str | None = None,
+    shard_index_override: int | None = None,
+    num_shards_override: int | None = None,
     dry_run: bool = False,
 ) -> Dict[str, Any]:
     with open(cfg_path, "r", encoding="utf-8") as f:
@@ -123,10 +126,12 @@ def run(
     image_dir = str(input_cfg.get("image_dir", "data/seminar_data/images"))
     gt_mean_dir = Path(str(input_cfg.get("gt_mean_dir", "data/seminar_data/gt_maps_mean")))
     captions_json = str(input_cfg.get("captions_json", "data/seminar_data/image_captions.json"))
-    include_list = input_cfg.get("include_list", "splits/trainval.txt")
+    include_list = input_cfg.get("include_list", "/kaggle/working/splits/trainval.txt")
     exclude_list = input_cfg.get("exclude_list", None)
 
     output_root = Path(str(output_cfg.get("root", "AugSal/augmented_data")))
+    if output_root_override is not None:
+        output_root = Path(str(output_root_override))
     images_subdir = str(output_cfg.get("images_subdir", "images"))
     gt_subdir = str(output_cfg.get("gt_subdir", "gt_maps"))
     metadata_csv_name = str(output_cfg.get("metadata_csv", "metadata.csv"))
@@ -168,6 +173,12 @@ def run(
     max_images = max_images_override if max_images_override is not None else runtime_cfg.get("max_images", None)
     max_images = None if max_images is None else int(max_images)
     progress = bool(runtime_cfg.get("progress", True))
+    shard_index = int(shard_index_override if shard_index_override is not None else runtime_cfg.get("shard_index", 0))
+    num_shards = int(num_shards_override if num_shards_override is not None else runtime_cfg.get("num_shards", 1))
+    if num_shards <= 0:
+        raise ValueError("runtime.num_shards must be >= 1.")
+    if shard_index < 0 or shard_index >= num_shards:
+        raise ValueError("runtime.shard_index must be in [0, runtime.num_shards-1].")
 
     with open(captions_json, "r", encoding="utf-8") as f:
         captions_raw = json.load(f)
@@ -194,6 +205,14 @@ def run(
 
     if not filtered_images:
         raise ValueError("No images remain after include/exclude/max_images filtering.")
+
+    if num_shards > 1:
+        filtered_images = [p for i, p in enumerate(filtered_images) if (i % num_shards) == shard_index]
+        if not filtered_images:
+            raise ValueError(
+                "No images remain after shard filtering. "
+                "Check runtime.shard_index/runtime.num_shards."
+            )
 
     images_out_dir = output_root / images_subdir
     gt_out_dir = output_root / gt_subdir
@@ -419,6 +438,8 @@ def run(
             "output_rows": len(rows),
             "copy_originals": copy_originals,
             "missing_caption_count": missing_caption_count,
+            "shard_index": shard_index,
+            "num_shards": num_shards,
             "cross_attention_enabled": cross_enabled,
             "cross_attention_use_for_pseudo_label": cross_use_for_pseudo,
             "cross_attention_blend_weight": cross_blend_weight,
@@ -435,6 +456,8 @@ def run(
             "output_rows": len(rows),
             "copy_originals": copy_originals,
             "missing_caption_count": missing_caption_count,
+            "shard_index": shard_index,
+            "num_shards": num_shards,
             "cross_attention_enabled": cross_enabled,
             "cross_attention_use_for_pseudo_label": cross_use_for_pseudo,
             "cross_attention_blend_weight": cross_blend_weight,
@@ -450,6 +473,9 @@ def main() -> None:
     parser.add_argument("--max_images", type=int, default=None)
     parser.add_argument("--backend", type=str, default=None)
     parser.add_argument("--seed", type=int, default=None)
+    parser.add_argument("--output_root", type=str, default=None)
+    parser.add_argument("--shard_index", type=int, default=None)
+    parser.add_argument("--num_shards", type=int, default=None)
     parser.add_argument("--dry_run", action="store_true")
     args = parser.parse_args()
 
@@ -458,6 +484,9 @@ def main() -> None:
         max_images_override=args.max_images,
         backend_override=args.backend,
         seed_override=args.seed,
+        output_root_override=args.output_root,
+        shard_index_override=args.shard_index,
+        num_shards_override=args.num_shards,
         dry_run=args.dry_run,
     )
     print(json.dumps(summary, indent=2))

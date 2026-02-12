@@ -49,6 +49,13 @@ Use the wrapper script:
 bash AugSal/scripts/run_pipeline.sh AugSal/configs/default.yaml --max_images 20
 ```
 
+Useful runtime overrides:
+
+```bash
+python3 AugSal/pipeline.py --config AugSal/configs/default.yaml \
+  --num_shards 2 --shard_index 0 --output_root /tmp/augsal_shard0
+```
+
 ## Optional Diffusers backend
 
 Use config:
@@ -81,12 +88,57 @@ When enabled, metadata includes:
 
 And selected maps can be saved to `selected_attention_maps/` if `cross_attention.save_selected_maps: true`.
 
+## Kaggle-ready usage
+
+Kaggle configs are included:
+- `AugSal/configs/kaggle_opencv.yaml`
+- `AugSal/configs/kaggle_diffusers_img2img.yaml`
+
+### Single-GPU run
+
+```bash
+# install once per session if needed
+python -m pip install diffusers transformers accelerate safetensors
+
+python AugSal/pipeline.py --config AugSal/configs/kaggle_diffusers_img2img.yaml
+```
+
+### T4x2 parallel run (sharded)
+
+This launches two shard jobs (one per GPU), then merges outputs:
+
+```bash
+bash AugSal/scripts/run_pipeline_kaggle_t4x2.sh AugSal/configs/kaggle_diffusers_img2img.yaml
+```
+
+Merged output is written to:
+- `/kaggle/working/AugSal/augmented_data`
+
+Shard outputs are written to:
+- `/kaggle/working/AugSal/shards/shard_0`
+- `/kaggle/working/AugSal/shards/shard_1`
+
+You can merge manually with:
+
+```bash
+python AugSal/scripts/merge_shards.py \
+  --shards_root /kaggle/working/AugSal/shards \
+  --out_root /kaggle/working/AugSal/augmented_data \
+  --overwrite
+```
+
 ## Fine-tuning with generated data
 
 Use this config directly with your existing trainer:
 
 ```bash
-python3 scripts/finetune_deepgaze_iie.py --config AugSal/configs/finetune_deepgaze_iie_augsal.yaml
+python3 scripts/finetune_deepgaze_iie.py --config configs/finetune_deepgaze_iie_augsal.yaml
+```
+
+Use both Kaggle T4 GPUs by running CV folds in parallel:
+
+```bash
+bash scripts/run_finetune_deepgaze_iie_augsal_kaggle_t4x2.sh configs/finetune_deepgaze_iie_augsal.yaml
 ```
 
 Then evaluate with:
