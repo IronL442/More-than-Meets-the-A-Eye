@@ -13,8 +13,8 @@ output:
   gt_subdir: "gt_maps"
   metadata_csv: "metadata.csv"
   metadata_jsonl: "metadata.jsonl"
-  copy_originals: true
-  save_change_maps: true
+  copy_originals: false
+  save_change_maps: false
   change_maps_subdir: "change_maps"
   overwrite: true
 
