@@ -1,0 +1,75 @@
+input:
+  image_dir: "data/seminar_data/images"
+  gt_mean_dir: "data/seminar_data/gt_maps_mean"
+  captions_json: "data/seminar_data/image_captions.json"
+  include_list: "splits/trainval.txt"
+  exclude_list: null
+
+output:
+  root: "AugSal/augmented_data_diffusers"
+  images_subdir: "images"
+  gt_subdir: "gt_maps"
+  metadata_csv: "metadata.csv"
+  metadata_jsonl: "metadata.jsonl"
+  copy_originals: true
+  save_change_maps: true
+  change_maps_subdir: "change_maps"
+  overwrite: true
+
+generation:
+  backend: "diffusers_img2img"
+  seed: 1337
+  num_augs_per_image: 1
+  image_ext: ".jpg"
+  jpg_quality: 95
+
+  opencv:
+    max_rotation_deg: 7.0
+    max_shift_ratio: 0.04
+    min_scale: 0.96
+    max_scale: 1.04
+    perspective_prob: 0.35
+    perspective_jitter_ratio: 0.03
+    brightness_delta: 20.0
+    contrast_delta: 0.18
+    saturation_delta: 0.15
+    noise_std: 3.0
+
+  diffusers:
+    model_id: "stabilityai/sdxl-turbo"
+    device: "auto"
+    torch_dtype: "float16"
+    strength: 0.35
+    guidance_scale: 5.0
+    num_inference_steps: 20
+    use_safetensors: true
+    cross_attention:
+      enabled: true
+      map_hw: [64, 64]
+      layer_name_contains: "attn2"
+      include_special_tokens: false
+      max_token_maps: 77
+
+prompting:
+  negative_prompt: "extra people, duplicated limbs, text overlays, logos, watermarks, cartoon style, surreal artifacts"
+
+pseudo_label:
+  diff_weight: 0.35
+  change_blur_ksize: 17
+  change_blur_sigma: 3.0
+  min_change_threshold: 2.0
+  change_floor: 1.0e-6
+  smooth_ksize: 9
+  smooth_sigma: 2.0
+
+cross_attention:
+  enabled: true
+  use_for_pseudo_label: true
+  blend_weight: 0.5
+  min_token_chars: 2
+  save_selected_maps: true
+  selected_maps_subdir: "selected_attention_maps"
+
+runtime:
+  max_images: null
+  progress: true

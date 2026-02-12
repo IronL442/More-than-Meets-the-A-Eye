@@ -1,0 +1,13 @@
+{
+  "config": "AugSal/configs/default.yaml",
+  "seed": 1337,
+  "backend": "opencv_caption_style",
+  "source_images": 122,
+  "num_augs_per_image": 1,
+  "output_rows": 244,
+  "copy_originals": true,
+  "missing_caption_count": 0,
+  "cross_attention_enabled": false,
+  "cross_attention_use_for_pseudo_label": true,
+  "cross_attention_blend_weight": 0.5
+}

@@ -216,7 +216,7 @@ if __name__ == "__main__":
     # --------------------------------------------------
     IMAGE_DIR = "data/seminar_data/images"
     HEATMAP_DIR = "data/seminar_data/gt_maps"
-    SPLIT_LIST = "splits/trainval.txt"
+    SPLIT_LIST = "splits/test.txt"
 
     OUTPUT_IMAGE_DIR = "MiaMix/augmented_images/images"
     OUTPUT_LABEL_DIR = "MiaMix/augmented_images/labels"

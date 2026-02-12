@@ -19,10 +19,10 @@ model_kwargs:
 
 datasets:
   - name: "folder"
-    root: "MiaMix/augmented_images"
+    root: "data/seminar_data"
     split: "test"
-    include_list: "splits/test_aug.txt"
-    gt_subdir: "labels"
+    include_list: "splits/test.txt"
+    gt_subdir: "gt_maps_mean"
 
 heatmaps_png:
   enabled: true
