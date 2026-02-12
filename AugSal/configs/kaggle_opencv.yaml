@@ -1,8 +1,8 @@
 input:
   # Point this to your Kaggle input dataset mount.
-  image_dir: "/kaggle/input/seminar-data/seminar_data/images"
-  gt_mean_dir: "/kaggle/input/seminar-data/seminar_data/gt_maps_mean"
-  captions_json: "/kaggle/input/seminar-data/seminar_data/image_captions.json"
+  image_dir: "/kaggle/input/datasets/lauritseisengarten/seminar-data/seminar_data/images"
+  gt_mean_dir: "/kaggle/input/datasets/lauritseisengarten/seminar-data/seminar_data/gt_maps_mean"
+  captions_json: "/kaggle/input/datasets/lauritseisengarten/seminar-data/seminar_data/image_captions.json"
   # Recommended: provide a train-only list to avoid test leakage.
   include_list: null
   exclude_list: null

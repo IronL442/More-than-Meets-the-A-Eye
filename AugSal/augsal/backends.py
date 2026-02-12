@@ -517,11 +517,19 @@ class DiffusersImg2ImgBackend(AugmentationBackend):
         else:
             dtype = torch.float32
 
-        self.pipe = AutoPipelineForImage2Image.from_pretrained(
-            self.model_id,
-            torch_dtype=dtype,
-            use_safetensors=bool(raw.get("use_safetensors", True)),
-        )
+        # Newer diffusers versions prefer `dtype`; keep fallback for older versions.
+        try:
+            self.pipe = AutoPipelineForImage2Image.from_pretrained(
+                self.model_id,
+                dtype=dtype,
+                use_safetensors=bool(raw.get("use_safetensors", True)),
+            )
+        except TypeError:
+            self.pipe = AutoPipelineForImage2Image.from_pretrained(
+                self.model_id,
+                torch_dtype=dtype,
+                use_safetensors=bool(raw.get("use_safetensors", True)),
+            )
 
         if self.device == "auto":
             device = "cuda" if torch.cuda.is_available() else "cpu"
