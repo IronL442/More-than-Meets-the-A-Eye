@@ -21,7 +21,7 @@ output:
 generation:
   backend: "diffusers_img2img"
   seed: 1337
-  num_augs_per_image: 1
+  num_augs_per_image: 2
   image_ext: ".jpg"
   jpg_quality: 95
 
@@ -43,9 +43,9 @@ generation:
     device: "cuda"
     torch_dtype: "float16"
     max_side: 768
-    strength: 0.30
-    guidance_scale: 0.0
-    num_inference_steps: 6
+    strength: 0.55
+    guidance_scale: 1.5
+    num_inference_steps: 12
     use_safetensors: true
     enable_attention_slicing: true
     enable_vae_slicing: true

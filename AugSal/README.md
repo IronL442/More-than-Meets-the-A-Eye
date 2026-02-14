@@ -150,10 +150,13 @@ Use both Kaggle T4 GPUs by running CV folds in parallel:
 bash scripts/run_finetune_deepgaze_iie_augsal_kaggle_t4x2.sh configs/finetune_deepgaze_iie_augsal.yaml
 ```
 
-Then evaluate with:
+Then evaluate on the original non-augmented test images with all four finetuned folds:
 
 ```bash
-python3 -m saliency_bench.core.runner --config AugSal/configs/eval_deepgaze_iie_augsal.yaml
+python3 -m saliency_bench.core.runner --config AugSal/configs/augsal_evaluation_ft_fold_01.yaml
+python3 -m saliency_bench.core.runner --config AugSal/configs/augsal_evaluation_ft_fold_02.yaml
+python3 -m saliency_bench.core.runner --config AugSal/configs/augsal_evaluation_ft_fold_03.yaml
+python3 -m saliency_bench.core.runner --config AugSal/configs/augsal_evaluation_ft_fold_04.yaml
 ```
 
 ## Important defaults
