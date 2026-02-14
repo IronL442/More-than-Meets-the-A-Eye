@@ -55,10 +55,12 @@ def build_pseudo_label(
     *,
     diff_weight: float = 0.35,
     change_floor: float = 1e-6,
+    salient_boost_weight: float = 0.0,
+    salient_boost_power: float = 1.3,
     smooth_ksize: int = 9,
     smooth_sigma: float = 2.0,
 ) -> np.ndarray:
-    """Blend GT map with augmentation-change attention to form pseudo saliency."""
+    """Blend GT with change-attention, optionally amplifying already salient GT regions."""
     gt = renorm_prob(gt_map)
     change = renorm_prob(change_attention, eps=float(change_floor))
 
@@ -66,6 +68,14 @@ def build_pseudo_label(
 
     w = float(np.clip(diff_weight, 0.0, 1.0))
     pseudo = renorm_prob((1.0 - w) * gt + w * guided)
+
+    # Optional prior: emphasize regions already salient in GT.
+    boost_w = float(np.clip(salient_boost_weight, 0.0, 1.0))
+    if boost_w > 0.0:
+        boost_p = max(0.1, float(salient_boost_power))
+        gt_prior = renorm_prob(np.power(gt, boost_p).astype(np.float32))
+        boosted = renorm_prob(pseudo * (1.0 + gt_prior))
+        pseudo = renorm_prob((1.0 - boost_w) * pseudo + boost_w * boosted)
 
     k = _odd_ksize(smooth_ksize)
     if k > 1:

@@ -171,5 +171,7 @@ Primary controls are in `AugSal/configs/default.yaml`:
 - `generation.num_augs_per_image`
 - `generation.backend`
 - `pseudo_label.diff_weight`
+- `pseudo_label.salient_boost_weight`
+- `pseudo_label.salient_boost_power`
 - `pseudo_label.min_change_threshold`
 - `output.copy_originals`

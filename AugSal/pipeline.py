@@ -303,6 +303,7 @@ def run(
                     negative_prompt=prompt.negative,
                     caption=caption,
                     seed=aug_seed,
+                    saliency_map=gt_map,
                 )
             else:
                 aug_rgb = backend.generate(
@@ -311,6 +312,7 @@ def run(
                     negative_prompt=prompt.negative,
                     caption=caption,
                     seed=aug_seed,
+                    saliency_map=gt_map,
                 )
                 aug_aux = {}
             if aug_rgb.shape != img_rgb.shape:
@@ -373,6 +375,8 @@ def run(
                 change_for_pseudo,
                 diff_weight=float(pseudo_cfg.get("diff_weight", 0.35)),
                 change_floor=float(pseudo_cfg.get("change_floor", 1e-6)),
+                salient_boost_weight=float(pseudo_cfg.get("salient_boost_weight", 0.0)),
+                salient_boost_power=float(pseudo_cfg.get("salient_boost_power", 1.3)),
                 smooth_ksize=int(pseudo_cfg.get("smooth_ksize", 9)),
                 smooth_sigma=float(pseudo_cfg.get("smooth_sigma", 2.0)),
             )
@@ -443,6 +447,8 @@ def run(
             "cross_attention_enabled": cross_enabled,
             "cross_attention_use_for_pseudo_label": cross_use_for_pseudo,
             "cross_attention_blend_weight": cross_blend_weight,
+            "pseudo_salient_boost_weight": float(pseudo_cfg.get("salient_boost_weight", 0.0)),
+            "pseudo_salient_boost_power": float(pseudo_cfg.get("salient_boost_power", 1.3)),
         }
         with open(output_root / "run_summary.json", "w", encoding="utf-8") as f:
             json.dump(run_summary, f, indent=2)
@@ -461,6 +467,8 @@ def run(
             "cross_attention_enabled": cross_enabled,
             "cross_attention_use_for_pseudo_label": cross_use_for_pseudo,
             "cross_attention_blend_weight": cross_blend_weight,
+            "pseudo_salient_boost_weight": float(pseudo_cfg.get("salient_boost_weight", 0.0)),
+            "pseudo_salient_boost_power": float(pseudo_cfg.get("salient_boost_power", 1.3)),
             "dry_run": True,
         }
 

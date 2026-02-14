@@ -19,6 +19,7 @@ class AugmentationBackend:
         negative_prompt: str,
         caption: str,
         seed: int,
+        saliency_map: np.ndarray | None = None,
     ) -> np.ndarray:
         raise NotImplementedError
 
@@ -30,6 +31,7 @@ class AugmentationBackend:
         negative_prompt: str,
         caption: str,
         seed: int,
+        saliency_map: np.ndarray | None = None,
     ) -> tuple[np.ndarray, Dict[str, Any]]:
         return self.generate(
             image_rgb,
@@ -37,6 +39,7 @@ class AugmentationBackend:
             negative_prompt=negative_prompt,
             caption=caption,
             seed=seed,
+            saliency_map=saliency_map,
         ), {}
 
 
@@ -52,6 +55,11 @@ class OpenCVCaptionStyleConfig:
     contrast_delta: float = 0.18
     saturation_delta: float = 0.15
     noise_std: float = 3.0
+    saliency_only: bool = True
+    saliency_min: float = 0.15
+    saliency_gamma: float = 1.25
+    saliency_blur_ksize: int = 31
+    saliency_blend: float = 1.0
 
 
 class OpenCVCaptionStyleBackend(AugmentationBackend):
@@ -76,6 +84,11 @@ class OpenCVCaptionStyleBackend(AugmentationBackend):
             contrast_delta=float(raw.get("contrast_delta", 0.18)),
             saturation_delta=float(raw.get("saturation_delta", 0.15)),
             noise_std=float(raw.get("noise_std", 3.0)),
+            saliency_only=bool(raw.get("saliency_only", True)),
+            saliency_min=float(raw.get("saliency_min", 0.15)),
+            saliency_gamma=float(raw.get("saliency_gamma", 1.25)),
+            saliency_blur_ksize=int(raw.get("saliency_blur_ksize", 31)),
+            saliency_blend=float(raw.get("saliency_blend", 1.0)),
         )
 
     @staticmethod
@@ -253,6 +266,48 @@ class OpenCVCaptionStyleBackend(AugmentationBackend):
         out = np.clip(out + noise, 0, 255)
         return out.astype(np.uint8)
 
+    def _prepare_saliency_mask(
+        self,
+        saliency_map: np.ndarray | None,
+        shape_hw: tuple[int, int],
+    ) -> np.ndarray | None:
+        if saliency_map is None:
+            return None
+
+        h, w = shape_hw
+        arr = np.asarray(saliency_map, dtype=np.float32)
+        if arr.ndim == 3:
+            arr = arr.squeeze()
+        if arr.ndim != 2:
+            return None
+        if arr.shape != (h, w):
+            arr = cv2.resize(arr, (w, h), interpolation=cv2.INTER_LINEAR)
+
+        arr = arr - float(arr.min())
+        maxv = float(arr.max())
+        if maxv <= 1e-8:
+            return None
+        arr = arr / maxv
+
+        smin = float(np.clip(self.cfg.saliency_min, 0.0, 0.95))
+        arr = np.clip((arr - smin) / max(1e-6, 1.0 - smin), 0.0, 1.0)
+
+        gamma = max(0.1, float(self.cfg.saliency_gamma))
+        arr = np.power(arr, gamma).astype(np.float32)
+
+        k = int(self.cfg.saliency_blur_ksize)
+        if k % 2 == 0:
+            k += 1
+        if k >= 3:
+            arr = cv2.GaussianBlur(arr, (k, k), sigmaX=0.0)
+        arr = np.clip(arr, 0.0, 1.0)
+
+        blend = float(np.clip(self.cfg.saliency_blend, 0.0, 1.0))
+        arr = np.clip(arr * blend, 0.0, 1.0)
+        if float(arr.max()) <= 1e-6:
+            return None
+        return arr[:, :, None]
+
     def generate(
         self,
         image_rgb: np.ndarray,
@@ -261,10 +316,19 @@ class OpenCVCaptionStyleBackend(AugmentationBackend):
         negative_prompt: str,
         caption: str,
         seed: int,
+        saliency_map: np.ndarray | None = None,
     ) -> np.ndarray:
         rng = np.random.default_rng(int(seed))
         flags = self._keyword_flags(caption)
         controls = self._prompt_controls(prompt, negative_prompt)
+
+        if self.cfg.saliency_only:
+            mask = self._prepare_saliency_mask(saliency_map, image_rgb.shape[:2])
+            if mask is not None:
+                edited = self._photometric_edit(image_rgb, rng, flags, controls).astype(np.float32)
+                base = image_rgb.astype(np.float32)
+                out = np.clip(base * (1.0 - mask) + edited * mask, 0.0, 255.0)
+                return out.astype(np.uint8)
 
         out = self._affine_warp(image_rgb, rng, controls)
         out = self._photometric_edit(out, rng, flags, controls)
@@ -634,8 +698,9 @@ class DiffusersImg2ImgBackend(AugmentationBackend):
         negative_prompt: str,
         caption: str,
         seed: int,
+        saliency_map: np.ndarray | None = None,
     ) -> tuple[np.ndarray, Dict[str, Any]]:
-        del caption
+        del caption, saliency_map
         from PIL import Image
 
         if self.capture_cross_attention and self._recorder is not None:
@@ -681,6 +746,7 @@ class DiffusersImg2ImgBackend(AugmentationBackend):
         negative_prompt: str,
         caption: str,
         seed: int,
+        saliency_map: np.ndarray | None = None,
     ) -> np.ndarray:
         out, _ = self.generate_with_aux(
             image_rgb,
@@ -688,6 +754,7 @@ class DiffusersImg2ImgBackend(AugmentationBackend):
             negative_prompt=negative_prompt,
             caption=caption,
             seed=seed,
+            saliency_map=saliency_map,
         )
         return out
 

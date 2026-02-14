@@ -31,10 +31,35 @@ generation:
     max_scale: 1.05
     perspective_prob: 0.35
     perspective_jitter_ratio: 0.03
-    brightness_delta: 20.0
-    contrast_delta: 0.18
-    saturation_delta: 0.15
-    noise_std: 3.0
+    #brightness_delta: 20.0
+    #contrast_delta: 0.18
+    #saturation_delta: 0.15
+    #noise_std: 3.0
+    #saliency_only: true
+    #saliency_min: 0.15
+    #saliency_gamma: 1.25
+    #saliency_blur_ksize: 31
+    #saliency_blend: 1.0
+
+    # Presets (copy values above):
+    # mild:
+    # brightness_delta: 15.0
+    # contrast_delta: 0.12
+    # saturation_delta: 0.10
+    # noise_std: 2.0
+    # saliency_min: 0.20
+    # saliency_gamma: 1.40
+    # saliency_blur_ksize: 25
+    # saliency_blend: 0.80
+    # strong:
+    brightness_delta: 50.0
+    contrast_delta: 1.0
+    saturation_delta: 1.0
+    noise_std: 8.0
+    saliency_min: 0.08
+    saliency_gamma: 0.90
+    saliency_blur_ksize: 41
+    saliency_blend: 1.00
 
   # Used when generation.backend == diffusers_img2img
   diffusers:
@@ -47,13 +72,17 @@ generation:
     use_safetensors: true
 
 pseudo_label:
-  diff_weight: 0.35
-  change_blur_ksize: 17
-  change_blur_sigma: 3.0
-  min_change_threshold: 2.0
+  # Less image-texture preset: smoother, less tied to raw pixel details.
+  diff_weight: 0.20
+  change_blur_ksize: 31
+  change_blur_sigma: 6.0
+  min_change_threshold: 6.0
   change_floor: 1.0e-6
-  smooth_ksize: 9
-  smooth_sigma: 2.0
+  salient_boost_weight: 0.0
+  salient_boost_power: 1.4
+  smooth_ksize: 21
+  smooth_sigma: 6.0
+
 
 cross_attention:
   enabled: false
