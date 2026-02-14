@@ -21,7 +21,7 @@ output:
 generation:
   backend: "diffusers_img2img"
   seed: 1337
-  num_augs_per_image: 2
+  num_augs_per_image: 1
   image_ext: ".jpg"
   jpg_quality: 95
 
