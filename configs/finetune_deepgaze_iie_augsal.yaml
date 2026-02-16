@@ -5,7 +5,7 @@ seed: 1337
 data:
   # AugSal output root containing {images, gt_maps}.
   # Default merged output from AugSal/scripts/run_pipeline_kaggle_t4x2.sh
-  root: "/kaggle/input/augmented-data/augmented_data 2"
+  root: "/kaggle/input/augmented-data/augmented_data"
   cv_folds: 4          # >= 2 enables CV
   cv_fold_index: null  # set to 0..3 to run a single fold
   cv_shuffle: true     # optional, defaults to data.shuffle

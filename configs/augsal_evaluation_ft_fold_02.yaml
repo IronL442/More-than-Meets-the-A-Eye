@@ -1,0 +1,33 @@
+experiment: "augsal_evaluation"
+output_dir: "outputs/augsal/eval/finetuned_fold_02"
+prediction_cache_dir: "predictions"
+cache_predictions: false
+predict_only: false
+
+models:
+  - "deepgaze_iie"
+
+
+active_models:
+  - "deepgaze_iie"
+
+model_kwargs:
+  deepgaze_iie:
+    use_uniform_centerbias: true
+    centerbias_path: "data/centerbias/centerbias_mit1003.npy"
+    weights_path: "outputs/finetune_augsal/deepgaze_iie/fold_02/final.pth"
+
+datasets:
+  - name: "folder"
+    root: "data/seminar_data"
+    split: "test"
+    include_list: "splits/test.txt"
+    gt_subdir: "gt_maps_mean"
+
+heatmaps_png:
+  enabled: true
+  overlay: true
+  normalize: "sum"
+  colormap: "jet"
+  alpha: 0.5
+  out_dir: "outputs/augsal/heatmaps/finetuned_fold_02"

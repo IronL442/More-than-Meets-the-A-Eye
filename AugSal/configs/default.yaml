@@ -52,24 +52,24 @@ generation:
     # saliency_blur_ksize: 25
     # saliency_blend: 0.80
     # Balanced preset for finetuning: moderate visual edits, stable saliency-local mask.
-    brightness_delta: 15.0
-    contrast_delta: 0.18
-    saturation_delta: 0.15
-    noise_std: 2.5
-    saliency_min: 0.20
-    saliency_gamma: 1.10
-    saliency_blur_ksize: 25
-    saliency_blend: 0.85
+    # brightness_delta: 15.0
+    # contrast_delta: 0.18
+    # saturation_delta: 0.15
+    # noise_std: 2.5
+    # saliency_min: 0.20
+    # saliency_gamma: 1.10
+    # saliency_blur_ksize: 25
+    # saliency_blend: 0.85
 
     # strong:
-    #brightness_delta: 100.0
-    #contrast_delta: 2.0
-    #saturation_delta: 3.0
-    #noise_std: 8.0
-    #saliency_min: 0.01
-    #saliency_gamma: 0.00001
-    #saliency_blur_ksize: 100
-    #saliency_blend: 1.00
+    brightness_delta: 30.0
+    contrast_delta: 0.36
+    saturation_delta: 0.3
+    noise_std: 5.0
+    saliency_min: 0.1
+    saliency_gamma: 0.55
+    saliency_blur_ksize: 25
+    saliency_blend: 1.00
 
   # Used when generation.backend == diffusers_img2img
   diffusers:
@@ -83,7 +83,7 @@ generation:
 
 pseudo_label:
   # Balanced preset for finetuning: avoid over-sharpened pseudo maps.
-  diff_weight: 0.12
+  diff_weight: 0.08
   change_blur_ksize: 17
   change_blur_sigma: 3.0
   min_change_threshold: 2.0
