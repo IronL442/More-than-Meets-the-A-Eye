@@ -11,7 +11,7 @@ output:
   gt_subdir: "gt_maps"
   metadata_csv: "metadata.csv"
   metadata_jsonl: "metadata.jsonl"
-  copy_originals: true
+  copy_originals: false
   save_change_maps: true
   change_maps_subdir: "change_maps"
   overwrite: true
@@ -51,15 +51,15 @@ generation:
     # saliency_gamma: 1.40
     # saliency_blur_ksize: 25
     # saliency_blend: 0.80
-    # strong:
-    brightness_delta: 50.0
-    contrast_delta: 1.0
-    saturation_delta: 1.0
-    noise_std: 8.0
-    saliency_min: 0.08
-    saliency_gamma: 0.90
-    saliency_blur_ksize: 41
-    saliency_blend: 1.00
+    # Balanced preset for finetuning: moderate visual edits, stable saliency-local mask.
+    brightness_delta: 15.0
+    contrast_delta: 0.18
+    saturation_delta: 0.15
+    noise_std: 2.5
+    saliency_min: 0.20
+    saliency_gamma: 1.10
+    saliency_blur_ksize: 25
+    saliency_blend: 0.85
 
   # Used when generation.backend == diffusers_img2img
   diffusers:
@@ -72,16 +72,16 @@ generation:
     use_safetensors: true
 
 pseudo_label:
-  # Less image-texture preset: smoother, less tied to raw pixel details.
-  diff_weight: 0.20
-  change_blur_ksize: 31
-  change_blur_sigma: 6.0
-  min_change_threshold: 6.0
+  # Balanced preset for finetuning: avoid over-sharpened pseudo maps.
+  diff_weight: 0.12
+  change_blur_ksize: 17
+  change_blur_sigma: 3.0
+  min_change_threshold: 2.0
   change_floor: 1.0e-6
   salient_boost_weight: 0.0
   salient_boost_power: 1.4
-  smooth_ksize: 21
-  smooth_sigma: 6.0
+  smooth_ksize: 9
+  smooth_sigma: 2.0
 
 
 cross_attention:
