@@ -61,6 +61,16 @@ generation:
     saliency_blur_ksize: 25
     saliency_blend: 0.85
 
+    # strong:
+    #brightness_delta: 100.0
+    #contrast_delta: 2.0
+    #saturation_delta: 3.0
+    #noise_std: 8.0
+    #saliency_min: 0.01
+    #saliency_gamma: 0.00001
+    #saliency_blur_ksize: 100
+    #saliency_blend: 1.00
+
   # Used when generation.backend == diffusers_img2img
   diffusers:
     model_id: "stabilityai/sdxl-turbo"
