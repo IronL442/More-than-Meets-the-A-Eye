@@ -11,11 +11,14 @@ CONFIG_PATH="${1:-configs/finetune_deepgaze_iie_kaggle.yaml}"
 shift || true
 PYTHON_BIN="${PYTHON_BIN:-python}"
 LOG_DIR="${LOG_DIR:-/kaggle/working/outputs/finetune/logs}"
+TORCH_HOME="${TORCH_HOME:-/kaggle/working/.cache/torch}"
 
 if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
   PYTHON_BIN="python3"
 fi
+export TORCH_HOME
 mkdir -p "${LOG_DIR}"
+mkdir -p "${TORCH_HOME}"
 
 if [[ $# -gt 0 ]]; then
   FOLDS=("$@")
@@ -24,6 +27,18 @@ else
 fi
 
 LAST_PID=""
+
+warm_torch_hub_cache() {
+  local warmup_log="${LOG_DIR}/torch_hub_warmup.log"
+  echo "[warmup] initializing DeepGazeIIE cache at TORCH_HOME=${TORCH_HOME}" >&2
+  CUDA_VISIBLE_DEVICES="" "${PYTHON_BIN}" -c "import deepgaze_pytorch; deepgaze_pytorch.DeepGazeIIE(pretrained=False); print('warmup_ok')" \
+    >"${warmup_log}" 2>&1 || {
+      echo "[error] DeepGaze cache warmup failed. Tail of ${warmup_log}:" >&2
+      tail -n 120 "${warmup_log}" >&2 || true
+      exit 1
+    }
+  echo "[warmup] cache ready" >&2
+}
 
 run_fold() {
   local gpu="$1"
@@ -38,6 +53,7 @@ run_fold() {
 }
 
 i=0
+warm_torch_hub_cache
 while [[ $i -lt ${#FOLDS[@]} ]]; do
   fold_a="${FOLDS[$i]}"
   run_fold 0 "${fold_a}"
