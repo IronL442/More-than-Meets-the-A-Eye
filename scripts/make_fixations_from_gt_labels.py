@@ -23,8 +23,6 @@ def main() -> None:
     out_dir = pathlib.Path("data/seminar_data/fixations")
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # Files are named like P01_IMG001_10100.png
-    # Example filename: P01_IMG001_10100.png -> stem = IMG001_10100
     pat = re.compile(r"P\d+_(IMG\d+_\d+)\.png", re.IGNORECASE)
 
     groups: dict[str, list[pathlib.Path]] = {}
