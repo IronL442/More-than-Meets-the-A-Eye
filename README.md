@@ -370,7 +370,3 @@ This writes:
 ```
 outputs/eval/deepgaze_iie_finetuned_cv_summary.csv
 ```
-
----
-
-Happy benchmarking! Plug in your favorite saliency datasets and models to compare them in a unified pipeline.
