@@ -4,6 +4,17 @@ venv/
 .venv/
 env/
 
+# Python artifacts
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Test/tool caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
 # Datasets
 data/*
 
@@ -11,5 +22,5 @@ data/*
 outputs/*
 predictions/*
 
-# Mac Bullshit
+# OS files
 .DS_Store
