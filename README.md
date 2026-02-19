@@ -289,18 +289,6 @@ outputs/heatmaps/<dataset>/<model>/<image_id>.png
 outputs/heatmaps/<dataset>/<model>/<image_id>_overlay.png
 ```
 
-### 6.2 Jupyter Notebook Viewer
-
-Generate/update the notebook:
-```bash
-python scripts/create_saliency_notebook.py
-```
-Open `notebooks/saliency_viewer.ipynb` in JupyterLab/Notebook to:
-* Browse models, datasets, and cached predictions.
-* Toggle colormaps/normalization modes.
-* Adjust overlay alpha (live).
-* Save ad-hoc PNGs from the UI.
-
 ### 6.3 Metrics Quicklook
 
 Each run creates per-image and aggregate CSVs. For a quick sanity check:
@@ -313,45 +301,6 @@ import pandas as pd
 df = pd.read_csv("outputs/folder__center_bias.csv")
 print(df.head())
 ```
-
----
-
-## 7. Testing & Linting
-
-* Smoke tests are provided under `tests/` (dataset/model contract checks + metric edge cases):
-  ```bash
-  pytest -q
-  ```
-* Optional formatting/linting (not enforced): install `black`, `isort`, `flake8` and run accordingly.
-
----
-
-## 8. Extending / Best Practices
-
-* **Caching** – Keep `cache_predictions: true` to avoid recomputing heavy models while iterating on metrics or visualization.
-* **GPU/MPS** – Torch models auto-select `cuda` if available, otherwise CPU. Adjust `device` via `model_kwargs` if needed (e.g., `"cuda:0"`/`"mps"`).
-* **Sampling** – Use `limit_images` + `predict_only` for fast, non-metric debugging. Example:
-  ```yaml
-  limit_images: 30
-  predict_only: true
-  heatmaps_png:
-    enabled: true
-    overlay: true
-  ```
-* **Dataset Adapters** – Always normalize GT maps (sum=1) and keep maps non-negative.
-* **Model Outputs** – Ensure predictions are non-negative before postprocess; the default `postprocess` resizes to dataset resolution and renormalizes to sum=1.
-* **Visualization** – Use the notebook viewer or PNG outputs to QA saliency qualitatively alongside quantitative metrics.
-
----
-
-## 9. Troubleshooting
-
-| Issue | Fix |
-| --- | --- |
-| `KeyError: "dataset 'foo' not found"` | Ensure your dataset adapter file is in `datasets/` and decorated with `@register("dataset","foo")`, and that `__init__.py` exists (already handled). |
-| CSV aggregation fails (`KeyError: 'dataset'`) | Happens only if no rows were produced (e.g., `limit_images=0`). Increase limit or ensure dataset paths exist. |
-| PNG alpha slider in notebook doesn’t change opacity | Regenerate the notebook after updating `scripts/create_saliency_notebook.py`; blended overlays now use OpenCV’s weighted sum. |
-| PyTorch MPS warnings | Informational; on macOS you can force CPU by passing `device: "cpu"` in `model_kwargs`. |
 
 ---
 
