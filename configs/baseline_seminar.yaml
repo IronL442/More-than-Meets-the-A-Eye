@@ -22,6 +22,7 @@ datasets:
     root: "data/seminar_data"
     split: "test"
     include_list: "splits/test.txt"
+    gt_subdir: "gt_maps_mean"
 
 heatmaps_png:
   enabled: true

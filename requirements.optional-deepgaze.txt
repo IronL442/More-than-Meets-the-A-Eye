@@ -1,0 +1,4 @@
+# DeepGaze II-E dependency used by models/deepgaze_iie.py and finetuning scripts.
+# If you need strict artifact-level reproducibility, pin this to a commit hash:
+# deepgaze_pytorch @ git+https://github.com/matthias-k/DeepGaze.git@<commit>
+deepgaze_pytorch @ git+https://github.com/matthias-k/DeepGaze.git

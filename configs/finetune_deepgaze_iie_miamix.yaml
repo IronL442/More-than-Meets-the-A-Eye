@@ -1,0 +1,70 @@
+experiment: "deepgaze_iie_finetune_miamix"
+output_dir: "outputs/finetune_miamix/deepgaze_iie"
+seed: 1337
+
+data:
+  # Expects MiaMix output root containing {images, gt_maps}.
+  root: "MiaMix/augmented_images"
+  cv_folds: 4
+  cv_fold_index: null
+  cv_shuffle: true
+  shuffle: true
+  sigma_px: 15
+  batch_size: 1
+  num_workers: 0
+  gt_aggregate: "mean"
+  gt_resize_interp: "bilinear"
+  gt_cache_dir: null
+  include_list: null
+  exclude_list: null
+  allow_uniform_gt: false
+
+model:
+  centerbias_path: "data/centerbias/centerbias_mit1003.npy"
+  use_uniform_centerbias: true
+  device: "cuda"
+
+determinism:
+  enabled: true
+  use_deterministic_algorithms: true
+  warn_only: true
+  cudnn_deterministic: true
+  cudnn_benchmark: false
+  cublas_workspace_config: ":4096:8"
+  dataloader_seed_offset: 1000
+
+training:
+  progress: true
+  loss: "kl"
+  stages:
+    - name: "feature_extraction"
+      save_best_only: true
+      epochs: 15
+      lr: 0.0001
+      weight_decay: 0.0
+      freeze:
+        mode: "train_blocks"
+        blocks: ["saliency", "finalizer"]
+      train_features: false
+
+    - name: "fine_tune"
+      save_best_only: true
+      epochs: 10
+      lr: 0.00001
+      weight_decay: 0.0
+      freeze:
+        mode: "train_blocks"
+        blocks: ["head"]
+        backbone_last_n_modules: 0
+      train_features: false
+
+wandb:
+  enabled: false
+  project: null
+  entity: null
+  name: null
+  group: null
+  tags: ["deepgaze", "finetune", "cv", "miamix"]
+  notes: "Fine-tuning on MiaMix-generated dataset"
+  dir: null
+  mode: null

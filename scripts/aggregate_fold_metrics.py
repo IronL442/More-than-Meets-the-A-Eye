@@ -32,13 +32,13 @@ def main() -> None:
     parser.add_argument(
         "--pattern",
         type=str,
-        default="outputs/eval/deepgaze_iie_finetuned_fold_*/ALL_SUMMARY.csv",
+        default="outputs/non_augmented/eval/deepgaze_iie_finetuned_fold_*/ALL_SUMMARY.csv",
         help="Glob pattern for per-fold ALL_SUMMARY.csv files.",
     )
     parser.add_argument(
         "--out",
         type=str,
-        default="outputs/eval/deepgaze_iie_finetuned_cv_summary.csv",
+        default="outputs/non_augmented/eval/deepgaze_iie_finetuned_cv_summary.csv",
         help="Output CSV path for averaged metrics.",
     )
     args = parser.parse_args()

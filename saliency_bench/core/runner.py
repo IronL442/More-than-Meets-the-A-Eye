@@ -1,4 +1,6 @@
 import os
+import json
+import hashlib
 from importlib import import_module
 from typing import Any, Dict
 
@@ -11,6 +13,11 @@ from metrics.metrics import cc, emd_wasserstein, kl_div
 from saliency_bench.core.registry import build
 from saliency_bench.utils.image_ops import renorm_prob
 from saliency_bench.utils.heatmap_viz import save_heatmap_png, save_overlay_png
+
+
+def _stable_hash(payload: Dict[str, Any]) -> str:
+    packed = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(packed.encode("utf-8")).hexdigest()[:12]
 
 
 def _import_adapters():
@@ -121,11 +128,19 @@ def run_experiment(cfg_path: str):
 
     all_rows = []
     for ds_cfg in cfg["datasets"]:
-        ds = build("dataset", ds_cfg["name"], **{k: v for k, v in ds_cfg.items() if k != "name"})
+        ds_kwargs = {k: v for k, v in ds_cfg.items() if k != "name"}
+        ds = build("dataset", ds_cfg["name"], **ds_kwargs)
         models_to_run = cfg.get("active_models", cfg["models"])
         for model_name in models_to_run:
             model_kwargs = cfg.get("model_kwargs", {}).get(model_name, {})
             model = build("model", model_name, **model_kwargs)
+            cache_sig = _stable_hash(
+                {
+                    "dataset": ds_cfg,
+                    "model": model_name,
+                    "model_kwargs": model_kwargs,
+                }
+            )
             rows = []
             count = 0
             for sample in tqdm(ds, desc=f"{ds.name}:{model_name}"):
@@ -136,7 +151,8 @@ def run_experiment(cfg_path: str):
                 img = sample["image"]
                 H, W = sample["gt_map"].shape
                 pred_path = os.path.join(
-                    pred_dir, f"{model_name}__{ds.name}__{sample['image_id']}.npy"
+                    pred_dir,
+                    f"{model_name}__{ds.name}__{sample['image_id']}__{cache_sig}.npy",
                 )
                 if cfg.get("cache_predictions", True) and os.path.exists(pred_path):
                     pred = np.load(pred_path).astype(np.float32)

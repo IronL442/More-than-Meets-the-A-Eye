@@ -1,11 +1,10 @@
-experiment: "deepgaze_iie_finetune_augsal_kaggle"
-output_dir: "/kaggle/working/outputs/finetune_augsal/deepgaze_iie"
+experiment: "deepgaze_iie_finetune_augsal"
+output_dir: "outputs/finetune_augsal/deepgaze_iie"
 seed: 1337
 
 data:
   # AugSal output root containing {images, gt_maps}.
-  # Default merged output from AugSal/scripts/run_pipeline_kaggle_t4x2.sh
-  root: "/kaggle/input/augmented-data/augmented_data"
+  root: "AugSal/augmented_data"
   cv_folds: 4          # >= 2 enables CV
   cv_fold_index: null  # set to 0..3 to run a single fold
   cv_shuffle: true     # optional, defaults to data.shuffle
@@ -24,6 +23,15 @@ model:
   centerbias_path: "data/centerbias/centerbias_mit1003.npy"
   use_uniform_centerbias: true
   device: "cuda"
+
+determinism:
+  enabled: true
+  use_deterministic_algorithms: true
+  warn_only: true
+  cudnn_deterministic: true
+  cudnn_benchmark: false
+  cublas_workspace_config: ":4096:8"
+  dataloader_seed_offset: 1000
 
 training:
   progress: true
@@ -51,12 +59,12 @@ training:
       train_features: false
 
 wandb:
-  enabled: true
+  enabled: false
   project: "deepgaze-iie-saliency"
   entity: null
   name: "finetuned-augsal"
   group: "finetune-vs-baseline"
   tags: ["deepgaze", "finetune", "cv", "augsal"]
   notes: "4-fold CV fine-tuning on AugSal augmented_data (images + pseudo gt_maps)"
-  dir: "/kaggle/working/wandb_logs"
-  mode: "online"
+  dir: null
+  mode: null

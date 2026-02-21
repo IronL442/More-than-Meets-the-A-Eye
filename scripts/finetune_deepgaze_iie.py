@@ -1,7 +1,10 @@
 import argparse
 import os
 import sys
-from typing import Dict, List, Optional, Tuple
+import json
+import random
+import hashlib
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -38,6 +41,63 @@ from models.deepgaze_iie import build_deepgaze_inputs
 from saliency_bench.utils.finetune_utils import apply_freeze_config, count_params, set_requires_grad
 from saliency_bench.utils.gt_from_fix import fixations_to_density
 from saliency_bench.utils.image_ops import renorm_prob, to_rgb_uint8
+
+
+def _config_hash(cfg: Dict[str, Any]) -> str:
+    packed = json.dumps(cfg, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(packed.encode("utf-8")).hexdigest()
+
+
+def _seed_worker_factory(base_seed: int):
+    def _seed_worker(worker_id: int) -> None:
+        worker_seed = int((base_seed + worker_id) % (2**32))
+        random.seed(worker_seed)
+        np.random.seed(worker_seed)
+        torch.manual_seed(worker_seed)
+
+    return _seed_worker
+
+
+def _set_reproducibility(
+    *,
+    seed: int,
+    cfg: Dict[str, Any],
+) -> Dict[str, Any]:
+    enabled = bool(cfg.get("enabled", True))
+    use_det_algos = bool(cfg.get("use_deterministic_algorithms", enabled))
+    warn_only = bool(cfg.get("warn_only", True))
+    cudnn_deterministic = bool(cfg.get("cudnn_deterministic", enabled))
+    cudnn_benchmark = bool(cfg.get("cudnn_benchmark", False))
+    cublas_workspace = cfg.get("cublas_workspace_config", None)
+    if cublas_workspace:
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = str(cublas_workspace)
+
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
+
+    if hasattr(torch.backends, "cudnn"):
+        torch.backends.cudnn.deterministic = cudnn_deterministic
+        torch.backends.cudnn.benchmark = cudnn_benchmark
+
+    torch.use_deterministic_algorithms(use_det_algos, warn_only=warn_only)
+
+    return {
+        "seed": int(seed),
+        "enabled": enabled,
+        "use_deterministic_algorithms": use_det_algos,
+        "warn_only": warn_only,
+        "cudnn_deterministic": cudnn_deterministic,
+        "cudnn_benchmark": cudnn_benchmark,
+        "cublas_workspace_config": cublas_workspace,
+    }
+
+
+def _write_json(path: str, payload: Dict[str, Any]) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(payload, f, indent=2, sort_keys=False)
 
 
 class FolderSaliencyDataset(torch.utils.data.Dataset):
@@ -481,6 +541,8 @@ def run(
     cv_shuffle = bool(data_cfg.get("cv_shuffle", shuffle))
     include_list = data_cfg.get("include_list", None)
     exclude_list = data_cfg.get("exclude_list", None)
+    determinism_cfg = cfg.get("determinism", {}) or {}
+    dataloader_seed_offset = int(determinism_cfg.get("dataloader_seed_offset", 1000))
 
     if batch_size != 1:
         raise ValueError("DeepGaze IIE fine-tuning expects batch_size=1 unless you add a custom collate/resize.")
@@ -525,6 +587,20 @@ def run(
         output_dir = os.path.join(base_output_dir, fold_suffix) if fold_suffix else base_output_dir
         os.makedirs(output_dir, exist_ok=True)
         _write_yaml(os.path.join(output_dir, "config.yaml"), cfg)
+        fold_seed = int(seed + (fold_idx if fold_idx is not None else 0))
+        reproducibility_meta = _set_reproducibility(seed=fold_seed, cfg=determinism_cfg)
+        _write_json(
+            os.path.join(output_dir, "run_metadata.json"),
+            {
+                "config_path": cfg_path,
+                "config_hash": _config_hash(cfg),
+                "fold_index": int(fold_idx) if fold_idx is not None else None,
+                "reproducibility": reproducibility_meta,
+                "torch_version": torch.__version__,
+                "cuda_available": bool(torch.cuda.is_available()),
+                "cuda_device_count": int(torch.cuda.device_count()) if torch.cuda.is_available() else 0,
+            },
+        )
 
         model = deepgaze_pytorch.DeepGazeIIE(pretrained=pretrained).to(device)
 
@@ -583,12 +659,16 @@ def run(
             batch_size=batch_size,
             shuffle=True,
             num_workers=num_workers,
+            worker_init_fn=_seed_worker_factory(fold_seed + dataloader_seed_offset),
+            generator=torch.Generator().manual_seed(fold_seed + dataloader_seed_offset),
         )
         val_loader = torch.utils.data.DataLoader(
             val_ds,
             batch_size=batch_size,
             shuffle=False,
             num_workers=num_workers,
+            worker_init_fn=_seed_worker_factory(fold_seed + dataloader_seed_offset + 100000),
+            generator=torch.Generator().manual_seed(fold_seed + dataloader_seed_offset + 100000),
         )
 
         log_path = os.path.join(output_dir, "train_log.csv")

@@ -5,9 +5,9 @@ set -euo pipefail
 #   bash scripts/run_finetune_deepgaze_iie_augsal_kaggle_t4x2.sh [config_path] [fold_idx ...]
 # Examples:
 #   bash scripts/run_finetune_deepgaze_iie_augsal_kaggle_t4x2.sh
-#   bash scripts/run_finetune_deepgaze_iie_augsal_kaggle_t4x2.sh configs/finetune_deepgaze_iie_augsal.yaml 0 1 2 3
+#   bash scripts/run_finetune_deepgaze_iie_augsal_kaggle_t4x2.sh configs/finetune_deepgaze_iie_augsal_kaggle.yaml 0 1 2 3
 
-CONFIG_PATH="${1:-configs/finetune_deepgaze_iie_augsal.yaml}"
+CONFIG_PATH="${1:-configs/finetune_deepgaze_iie_augsal_kaggle.yaml}"
 shift || true
 PYTHON_BIN="${PYTHON_BIN:-python}"
 LOG_DIR="${LOG_DIR:-/kaggle/working/outputs/finetune_augsal/logs}"

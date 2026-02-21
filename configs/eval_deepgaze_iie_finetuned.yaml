@@ -1,6 +1,6 @@
 experiment: "eval_deepgaze_iie_finetuned"
-output_dir: "outputs/eval/deepgaze_iie_finetuned"
-prediction_cache_dir: "predictions"
+output_dir: "outputs/non_augmented/eval/deepgaze_iie_finetuned"
+prediction_cache_dir: "outputs/non_augmented/predictions/finetuned_single"
 cache_predictions: false
 predict_only: false
 
@@ -13,10 +13,11 @@ active_models:
 model_kwargs:
   deepgaze_iie:
     use_uniform_centerbias: true
-    weights_path: "/kaggle/working/outputs/finetune/deepgaze_iie/final.pth"
+    weights_path: "outputs/finetune/deepgaze_iie/final.pth"
 
 datasets:
   - name: "folder"
-    root: "/kaggle/input/img_bin"
+    root: "data/seminar_data"
     split: "test"
-    include_list: "/kaggle/working/splits/test.txt"
+    include_list: "splits/test.txt"
+    gt_subdir: "gt_maps_mean"

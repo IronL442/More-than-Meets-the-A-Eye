@@ -72,6 +72,14 @@ cross_attention:
   save_selected_maps: true
   selected_maps_subdir: "selected_attention_maps"
 
+determinism:
+  enabled: true
+  use_deterministic_algorithms: true
+  warn_only: true
+  cudnn_deterministic: true
+  cudnn_benchmark: false
+  cublas_workspace_config: ":4096:8"
+
 runtime:
   max_images: null
   shard_index: 0

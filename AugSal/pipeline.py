@@ -4,6 +4,8 @@ import argparse
 import csv
 import json
 import os
+import random
+import hashlib
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
@@ -24,6 +26,60 @@ from augsal.pseudo_label import (
     renorm_prob,
     select_saliency_guided_attention_map,
 )
+
+
+def _config_hash(cfg: Dict[str, Any]) -> str:
+    packed = json.dumps(cfg, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(packed.encode("utf-8")).hexdigest()
+
+
+def _set_reproducibility(seed: int, cfg: Dict[str, Any]) -> Dict[str, Any]:
+    enabled = bool(cfg.get("enabled", True))
+    use_det_algos = bool(cfg.get("use_deterministic_algorithms", enabled))
+    warn_only = bool(cfg.get("warn_only", True))
+    cudnn_deterministic = bool(cfg.get("cudnn_deterministic", enabled))
+    cudnn_benchmark = bool(cfg.get("cudnn_benchmark", False))
+    cublas_workspace = cfg.get("cublas_workspace_config", None)
+    if cublas_workspace:
+        os.environ["CUBLAS_WORKSPACE_CONFIG"] = str(cublas_workspace)
+
+    random.seed(seed)
+    np.random.seed(seed)
+
+    meta: Dict[str, Any] = {
+        "seed": int(seed),
+        "enabled": enabled,
+        "use_deterministic_algorithms": use_det_algos,
+        "warn_only": warn_only,
+        "cudnn_deterministic": cudnn_deterministic,
+        "cudnn_benchmark": cudnn_benchmark,
+        "cublas_workspace_config": cublas_workspace,
+        "torch_available": False,
+    }
+
+    try:
+        import torch
+
+        meta["torch_available"] = True
+        meta["torch_version"] = torch.__version__
+        torch.manual_seed(seed)
+        if torch.cuda.is_available():
+            torch.cuda.manual_seed_all(seed)
+            meta["cuda_available"] = True
+            meta["cuda_device_count"] = int(torch.cuda.device_count())
+        else:
+            meta["cuda_available"] = False
+            meta["cuda_device_count"] = 0
+
+        if hasattr(torch.backends, "cudnn"):
+            torch.backends.cudnn.deterministic = cudnn_deterministic
+            torch.backends.cudnn.benchmark = cudnn_benchmark
+        torch.use_deterministic_algorithms(use_det_algos, warn_only=warn_only)
+    except ImportError:
+        meta["cuda_available"] = False
+        meta["cuda_device_count"] = 0
+
+    return meta
 
 
 def _stem(path: str | Path) -> str:
@@ -122,6 +178,7 @@ def run(
     pseudo_cfg = cfg.get("pseudo_label", {})
     cross_cfg = cfg.get("cross_attention", {})
     runtime_cfg = cfg.get("runtime", {})
+    determinism_cfg = cfg.get("determinism", {}) or {}
 
     image_dir = str(input_cfg.get("image_dir", "data/seminar_data/images"))
     gt_mean_dir = Path(str(input_cfg.get("gt_mean_dir", "data/seminar_data/gt_maps_mean")))
@@ -150,6 +207,7 @@ def run(
     cross_selected_maps_subdir = str(cross_cfg.get("selected_maps_subdir", "selected_attention_maps"))
 
     seed = int(seed_override if seed_override is not None else generation_cfg.get("seed", 1337))
+    reproducibility_meta = _set_reproducibility(seed=seed, cfg=determinism_cfg)
     rng = np.random.default_rng(seed)
 
     if backend_override:
@@ -435,6 +493,7 @@ def run(
 
         run_summary = {
             "config": cfg_path,
+            "config_hash": _config_hash(cfg),
             "seed": seed,
             "backend": backend.name,
             "source_images": len(filtered_images),
@@ -449,12 +508,14 @@ def run(
             "cross_attention_blend_weight": cross_blend_weight,
             "pseudo_salient_boost_weight": float(pseudo_cfg.get("salient_boost_weight", 0.0)),
             "pseudo_salient_boost_power": float(pseudo_cfg.get("salient_boost_power", 1.3)),
+            "reproducibility": reproducibility_meta,
         }
         with open(output_root / "run_summary.json", "w", encoding="utf-8") as f:
             json.dump(run_summary, f, indent=2)
     else:
         run_summary = {
             "config": cfg_path,
+            "config_hash": _config_hash(cfg),
             "seed": seed,
             "backend": backend.name,
             "source_images": len(filtered_images),
@@ -470,6 +531,7 @@ def run(
             "pseudo_salient_boost_weight": float(pseudo_cfg.get("salient_boost_weight", 0.0)),
             "pseudo_salient_boost_power": float(pseudo_cfg.get("salient_boost_power", 1.3)),
             "dry_run": True,
+            "reproducibility": reproducibility_meta,
         }
 
     return run_summary

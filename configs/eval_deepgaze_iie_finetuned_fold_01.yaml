@@ -1,7 +1,7 @@
 experiment: "eval_deepgaze_iie_finetuned_fold_01"
-output_dir: "outputs/eval/deepgaze_iie_finetuned_fold_01"
-prediction_cache_dir: "predictions"
-cache_predictions: true
+output_dir: "outputs/non_augmented/eval/deepgaze_iie_finetuned_fold_01"
+prediction_cache_dir: "outputs/non_augmented/predictions/fold_01"
+cache_predictions: false
 predict_only: false
 
 models:
@@ -13,10 +13,11 @@ active_models:
 model_kwargs:
   deepgaze_iie:
     use_uniform_centerbias: true
-    weights_path: "/outputs/finetune/deepgaze_iie/fold_01/final.pth"
+    weights_path: "outputs/finetune/deepgaze_iie/fold_01/final.pth"
 
 datasets:
   - name: "folder"
-    root: "/data/input/img_bin"
+    root: "data/seminar_data"
     split: "test"
-    include_list: "/splits/test.txt"
+    include_list: "splits/test.txt"
+    gt_subdir: "gt_maps_mean"

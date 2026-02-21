@@ -147,7 +147,7 @@ python3 scripts/finetune_deepgaze_iie.py --config configs/finetune_deepgaze_iie_
 Use both Kaggle T4 GPUs by running CV folds in parallel:
 
 ```bash
-bash scripts/run_finetune_deepgaze_iie_augsal_kaggle_t4x2.sh configs/finetune_deepgaze_iie_augsal.yaml
+bash scripts/run_finetune_deepgaze_iie_augsal_kaggle_t4x2.sh configs/finetune_deepgaze_iie_augsal_kaggle.yaml
 ```
 
 Then evaluate on the original non-augmented test images with all four finetuned folds:
@@ -162,8 +162,8 @@ python3 -m saliency_bench.core.runner --config AugSal/configs/augsal_evaluation_
 ## Important defaults
 
 - `default.yaml` only augments IDs from `splits/trainval.txt` to avoid test leakage.
-- `copy_originals: true` keeps original train images in the generated dataset alongside synthetic ones.
-- `num_augs_per_image: 2` by default.
+- `copy_originals: false` by default in `default.yaml`.
+- `num_augs_per_image: 1` by default.
 
 ## Tuning knobs
 

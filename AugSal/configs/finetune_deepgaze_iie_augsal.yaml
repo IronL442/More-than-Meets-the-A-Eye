@@ -23,6 +23,15 @@ model:
   use_uniform_centerbias: true
   device: "cuda"
 
+determinism:
+  enabled: true
+  use_deterministic_algorithms: true
+  warn_only: true
+  cudnn_deterministic: true
+  cudnn_benchmark: false
+  cublas_workspace_config: ":4096:8"
+  dataloader_seed_offset: 1000
+
 training:
   progress: true
   loss: "kl"
