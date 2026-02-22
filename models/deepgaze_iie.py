@@ -12,7 +12,7 @@ except ImportError:
 from scipy.ndimage import zoom
 from scipy.special import logsumexp
 
-import deepgaze_pytorch
+from deepgaze_pytorch.deepgaze2e import DeepGazeIIE
 
 from saliency_bench.core.interfaces import SaliencyModel
 from saliency_bench.core.registry import register
@@ -101,11 +101,11 @@ class DeepGazeIIEAdapter(SaliencyModel):
         if weights_path:
             if not os.path.exists(weights_path):
                 raise FileNotFoundError(f"DeepGaze weights not found at {weights_path}")
-            self.model = deepgaze_pytorch.DeepGazeIIE(pretrained=False).to(self.device)
+            self.model = DeepGazeIIE(pretrained=False).to(self.device)
             state = torch.load(weights_path, map_location="cpu")
             self.model.load_state_dict(state, strict=bool(strict))
         else:
-            self.model = deepgaze_pytorch.DeepGazeIIE(pretrained=bool(pretrained)).to(self.device)
+            self.model = DeepGazeIIE(pretrained=bool(pretrained)).to(self.device)
         self.model.eval()
 
         # centerbias template (2D array)

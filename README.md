@@ -16,6 +16,8 @@ The codebase is organized around:
 
 Use Python `3.10` or `3.11`.
 
+Canonical reproducible install (recommended):
+
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
@@ -23,9 +25,14 @@ python -m pip install --upgrade pip wheel setuptools
 python -m pip install -r requirements.lock.txt
 ```
 
-Optional extras:
+`requirements.lock.txt` already includes DeepGaze + CLIP and experiment extras used in this repo.
+
+If you want a leaner install instead, use `requirements.txt` and then add only the extras you need:
 
 ```bash
+# Lean base install
+python -m pip install -r requirements.txt
+
 # W&B logging
 python -m pip install -r requirements.optional-wandb.txt
 
@@ -126,6 +133,12 @@ python scripts/aggregate_fold_metrics.py \
 
 Equivalent aggregation can be done for AugSal and MiaMix by changing `--pattern` and `--out`.
 
+Generate a combined seminar overview (table + plots):
+
+```bash
+python scripts/make_results_overview.py --out_dir outputs/overview
+```
+
 ## Key Config Files
 
 - base finetune CV: `configs/finetune_deepgaze_iie.yaml`
@@ -150,4 +163,3 @@ Kaggle-specific configs are provided separately:
   - `outputs/*/eval/*/ALL_SUMMARY.csv`
 - fold aggregates:
   - produced by `scripts/aggregate_fold_metrics.py`
-

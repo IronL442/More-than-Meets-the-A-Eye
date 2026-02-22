@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 from glob import glob
 from typing import List
 
@@ -7,10 +8,10 @@ import pandas as pd
 
 
 def _extract_fold(path: str) -> str:
-    parts = os.path.normpath(path).split(os.sep)
-    for part in parts:
-        if part.startswith("fold_"):
-            return part
+    # Accept both ".../fold_01/..." and "..._fold_01/..." path styles.
+    match = re.search(r"(fold_\d+)", os.path.normpath(path))
+    if match:
+        return match.group(1)
     return "fold_unknown"
 
 

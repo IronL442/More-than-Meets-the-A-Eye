@@ -24,3 +24,4 @@ accelerate==0.34.2
 safetensors==0.4.5
 
 deepgaze_pytorch @ git+https://github.com/matthias-k/DeepGaze.git
+clip @ git+https://github.com/openai/CLIP.git

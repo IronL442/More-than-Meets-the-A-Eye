@@ -14,7 +14,7 @@ model_kwargs:
   deepgaze_iie:
     use_uniform_centerbias: true
     # Update to your trained checkpoint path.
-    weights_path: "outputs/finetune_augsal/deepgaze_iie/fold_01/fine_tune/best.pth"
+    weights_path: "weights/4foldrun_augsal_medium_augmented/deepgaze_iie/fold_01/final.pth"
 
 datasets:
   - name: "folder"

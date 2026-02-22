@@ -31,7 +31,7 @@ LAST_PID=""
 warm_torch_hub_cache() {
   local warmup_log="${LOG_DIR}/torch_hub_warmup.log"
   echo "[warmup] initializing DeepGazeIIE cache at TORCH_HOME=${TORCH_HOME}" >&2
-  CUDA_VISIBLE_DEVICES="" "${PYTHON_BIN}" -c "import deepgaze_pytorch; deepgaze_pytorch.DeepGazeIIE(pretrained=False); print('warmup_ok')" \
+  CUDA_VISIBLE_DEVICES="" "${PYTHON_BIN}" -c "from deepgaze_pytorch.deepgaze2e import DeepGazeIIE; DeepGazeIIE(pretrained=False); print('warmup_ok')" \
     >"${warmup_log}" 2>&1 || {
       echo "[error] DeepGaze cache warmup failed. Tail of ${warmup_log}:" >&2
       tail -n 120 "${warmup_log}" >&2 || true

@@ -19,8 +19,11 @@ __pycache__/
 data/*
 
 # Outputs
-outputs/*
+#outputs/*
 predictions/*
+
+# Weights
+weights/*
 
 # OS files
 .DS_Store

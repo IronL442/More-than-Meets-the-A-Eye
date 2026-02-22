@@ -30,7 +30,7 @@ try:
 except ImportError:
     _HAS_TQDM = False
 
-import deepgaze_pytorch
+from deepgaze_pytorch.deepgaze2e import DeepGazeIIE
 
 # Ensure repo root is on sys.path when running as a script.
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -499,7 +499,7 @@ def run(
         raise ValueError("No training stages provided in config.training.stages")
 
     if print_counts:
-        model = deepgaze_pytorch.DeepGazeIIE(pretrained=pretrained).to(device)
+        model = DeepGazeIIE(pretrained=pretrained).to(device)
         print("Trainable parameter counts per stage")
         for stage in stages:
             stage_name = str(stage.get("name", "stage"))
@@ -602,7 +602,7 @@ def run(
             },
         )
 
-        model = deepgaze_pytorch.DeepGazeIIE(pretrained=pretrained).to(device)
+        model = DeepGazeIIE(pretrained=pretrained).to(device)
 
         wandb_run = None
         if wandb_enabled:

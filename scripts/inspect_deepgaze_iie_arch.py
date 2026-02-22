@@ -3,8 +3,8 @@ from typing import Iterable, List
 
 import torch
 
-import deepgaze_pytorch
 from deepgaze_pytorch import deepgaze2e
+from deepgaze_pytorch.deepgaze2e import DeepGazeIIE
 
 
 def _format_seq(seq: torch.nn.Module) -> List[str]:
@@ -57,7 +57,7 @@ def _print_block_mapping() -> None:
 def _try_instantiate() -> None:
     print("Attempting to instantiate DeepGazeIIE (may download weights)...")
     try:
-        model = deepgaze_pytorch.DeepGazeIIE(pretrained=False)
+        model = DeepGazeIIE(pretrained=False)
         print("Model instantiated.")
         print(model)
     except Exception as exc:  # pragma: no cover - best effort inspection
